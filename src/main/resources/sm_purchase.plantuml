@@ -1,0 +1,17 @@
+@startuml PurchaseContract
+skinparam Monochrome true
+skinparam Shadowing false
+
+[*] --> offering: init
+offering: entry/ owner: address = 0x7F181DeF2E46196a239aC423a2b77e2E6A4d54a6
+offering: entry/ productId: uint = 1234
+offering --> checking: pay 1 ether
+checking: entry/ buyer: address = msg.sender
+checking -> declined: decline [sent from owner]
+declined -u-> offering: reinsert [sent from owner]
+declined: entry/ transfer(1 ether , buyer)
+checking --> sold: accept [sent from owner]
+sold: entry/ owner = buyer
+sold --> [*]: exit
+@enduml
+
