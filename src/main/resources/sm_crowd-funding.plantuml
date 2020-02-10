@@ -1,15 +1,16 @@
-@startuml CrowdFundingContract
+@startuml CrowdfundingContract
 skinparam Monochrome true
 skinparam Shadowing false
 
 [*] --> created: init
-created: entry/ company: address = 0x7F181DeF2E46196a239aC423a2b77e2E6A4d54a6
-created: entry/ endDate: uint = now + 10 days
+created: entry/ company: address = 0x0ad875cadf6CD921c5DB2cDD3dddC24A8b61B2d3
+created: entry/ endDate: uint = 1610406000000
 created: entry/ title: string = "IrgendeinProjekt"
 created: entry/ goal: uint = 10 ether
 funding: entry/ sum: uint = sum + msg.value
 failed: entry/ returnPayments()
 successful: entry/ transfer(sum + msg.value , company)
+successful: entry/ sum = sum + msg.value
 created --> funding: pay* [now <= endDate & msg.value < goal]
 funding --> funding: pay* [now <= endDate & sum + msg.value < goal]
 created --> successful: pay* [now <= endDate & msg.value >= goal]

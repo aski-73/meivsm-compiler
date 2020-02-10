@@ -19,8 +19,8 @@ public final class App {
     public static void main(String[] args) throws IOException, URISyntaxException {
         // Smart Contract als plant Uml einlesen
         // String file = "sm_rental.plantuml";
-        // String file = "sm_purchase.plantuml";
-        String file = "sm_trip-insurance.plantuml";
+        String file = "sm_purchase.plantuml";
+        // String file = "sm_trip-insurance.plantuml";
         // String file = "sm_crowd-funding.plantuml";
 
         InputStream in;
@@ -37,12 +37,13 @@ public final class App {
         // Kompilieren
         MyListener listenerDone = compile(createParseTree(in));
         String contract = listenerDone.getSmartContract().toString();
-        System.out.println(contract);
-        try (FileWriter fw = new FileWriter("/tmp/" + listenerDone.getSmartContractName())) {
+        // System.out.println(contract);
+        try (FileWriter fw = new FileWriter("/tmp/" + listenerDone.getSmartContractName() + ".sol")) {
             fw.write(contract);
         } catch (Exception e) {
             System.out.println(e);
         }
+        System.out.println("/tmp/" + listenerDone.getSmartContractName() + ".sol");
         // inspect(in);
 
     }

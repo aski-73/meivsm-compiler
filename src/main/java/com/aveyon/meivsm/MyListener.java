@@ -85,7 +85,7 @@ public class MyListener extends PlantUmlBaseListener {
         }
 
         // Fallback Function (sinnvolle Implementierung finden)
-        smartContract.append("\tfunction() external {}\n\n");
+        // smartContract.append("\tfunction() external {}\n\n");
 
         // Hauptmethode
         smartContract.append("\tfunction handle(string memory input) public payable {\n");
@@ -106,12 +106,16 @@ public class MyListener extends PlantUmlBaseListener {
         if (payStar) {
             smartContract.append("\tfunction returnPayments() private {\n");
             smartContract.append("\t\tfor (uint i = 0; i < senders.length; i++)\n");
-            smartContract.append("\t\t\ttransfer(senders[i].val, senders[i].addr);\n");
+            smartContract.append("\t\t\ttransfer(senderMap[senders[i].addr].val, senders[i].addr);\n");
             smartContract.append("\t}\n");
 
             smartContract.append("\tfunction addSender(Sender memory s) private {\n");
-            smartContract.append("\t\tif (senderMap[s.addr].addr == address(0))\n");
+            smartContract.append("\t\tif (senderMap[s.addr].addr == address(0)) {\n");
             smartContract.append("\t\t\tsenders.push(s);\n");
+            smartContract.append("\t\t\tsenderMap[s.addr] = s;\n");
+            smartContract.append("\t\t} else {\n");
+            smartContract.append("\t\t\tsenderMap[s.addr].val += s.val;\n");
+            smartContract.append("\t\t}\n");
             smartContract.append("\t}\n");
         }
 
@@ -295,7 +299,6 @@ public class MyListener extends PlantUmlBaseListener {
         // Für pay* Transaktion jeden Sender als Struktur in einem Array und Map
         // speichern
         smartContract.append("\t\t\tSender memory s = Sender(msg.sender, now, msg.value);\n");
-        smartContract.append("\t\t\tsenderMap[msg.sender] = s;\n");
         smartContract.append("\t\t\taddSender(s);\n");
 
         String newState = ctx.r.getText().toUpperCase();
@@ -438,8 +441,8 @@ public class MyListener extends PlantUmlBaseListener {
 
     /**
      * Kompiliert (rekursiv) einen mathematischen Ausdruck. Rekursiv, wenn auf der
-     * Rechten oder linken Seite des Ausdrucks wieder eine Expression
-     * (Ausdruck) vorhanden ist
+     * Rechten oder linken Seite des Ausdrucks wieder eine Expression (Ausdruck)
+     * vorhanden ist
      *
      * @param ctx
      * @return
@@ -452,8 +455,8 @@ public class MyListener extends PlantUmlBaseListener {
 
     /**
      * Kompiliert (rekursiv) einen VergleichsAusdruck. Rekursiv, wenn auf der
-     * Rechten oder Linken Seite des Ausdrucks wieder e
-     * ine Expression (Ausdruck) vorhanden ist
+     * Rechten oder Linken Seite des Ausdrucks wieder e ine Expression (Ausdruck)
+     * vorhanden ist
      *
      * @param ctx
      * @return
@@ -466,11 +469,13 @@ public class MyListener extends PlantUmlBaseListener {
 
     /**
      * Kompiliert eine Zuweisung
+     *
      * @param ctx
      * @return
      */
     public String enterAssignmentReturnsString(AssignmentContext ctx) {
-        return String.format("\t\t\t%s = %s;\n", ctx.l.getText(), ctx.r.getText());
+        String rightSide = evalExpression(ctx.r);
+        return String.format("\t\t\t%s = %s;\n", ctx.l.getText(), rightSide);
     }
 
     /**
