@@ -101,7 +101,9 @@ public class MyListener extends PlantUmlBaseListener {
                 + "\t\treturn (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));\n\t}\n\n");
 
         smartContract.append("\tfunction transfer(uint amount, address payable receiver) private {\n"
-                + "\t\tif (address(this).balance >= amount)\n" + "\t\t\treceiver.transfer(amount);\n\t}\n");
+                + "\t\taddress self = address(this);\n"
+                + "\t\tuint256 balance = self.balance;\n"
+                + "\t\tif (balance >= amount)\n" + "\t\t\treceiver.transfer(amount);\n\t}\n");
 
         if (payStar) {
             smartContract.append("\tfunction returnPayments() private {\n");
