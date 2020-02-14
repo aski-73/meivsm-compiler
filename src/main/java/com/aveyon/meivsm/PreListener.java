@@ -49,6 +49,7 @@ public class PreListener extends PlantUmlBaseListener {
             }
 
             stateDefEntryActivitiesMap.get(state).add(ctx.statement());
+            System.out.println(ctx.statement().getText());
         }
 
         if (ctx.ACTIVITY().getText().equals("exit/")) {

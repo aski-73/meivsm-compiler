@@ -141,6 +141,12 @@ public interface PlantUmlVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTimeUnit(PlantUmlParser.TimeUnitContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link PlantUmlParser#val}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVal(PlantUmlParser.ValContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link PlantUmlParser#variable}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

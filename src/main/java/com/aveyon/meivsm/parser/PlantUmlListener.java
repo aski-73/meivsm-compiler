@@ -228,6 +228,16 @@ public interface PlantUmlListener extends ParseTreeListener {
 	 */
 	void exitTimeUnit(PlantUmlParser.TimeUnitContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link PlantUmlParser#val}.
+	 * @param ctx the parse tree
+	 */
+	void enterVal(PlantUmlParser.ValContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PlantUmlParser#val}.
+	 * @param ctx the parse tree
+	 */
+	void exitVal(PlantUmlParser.ValContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PlantUmlParser#variable}.
 	 * @param ctx the parse tree
 	 */

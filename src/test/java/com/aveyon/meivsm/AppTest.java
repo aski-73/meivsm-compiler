@@ -24,13 +24,14 @@ public class AppTest {
         assertTrue(true);
     }
 
+    @Test
     public void compileStringAttributeWithWhitespaces() throws IOException {
         // GIVEN
         String givenPlantUml = ""+
-"@startuml testContract" +
-"[*] -> test" +
-"test: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"" +
-"@enduml";  
+"@startuml testContract\n" +
+"[*] -> test\n" +
+"test: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"\n" +
+"@enduml\n";
 
         // WHEN
         MyListener listenerDone = App.compile(createParseTree(givenPlantUml));

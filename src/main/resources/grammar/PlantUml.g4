@@ -77,15 +77,15 @@ HEX_COLOR: '#' [0-9A-F]+;
 // Bezeichner von Klassen, Attributen
 IDENTIFIER: [a-zA-Z]+;
 
-// ?. Sorgt dafür, dass der Lexer Leerzeichen etc. als Tokens ignoriert
-WS: [ \r\t\n]+ -> skip;
+STRING_VALUE: '"' ('\\' [\\"] | .)*? '"';
 
-STRING_VALUE:
-	'"' ('\\"' | .)*? '"'; // match "foo", "\"", "x\"\"y", ...
+// ?. Sorgt dafür, dass der Lexer Leerzeichen etc. als Tokens ignoriert
 
 // GENERIC VALUE (Muss ganz unten in den Lexer Rules stehen, sonst werden alle Tokens dieser Lexer
 // Regel zugewiesen
-VALUE: [0-9a-zA-Z#+-/*"]+;
+VALUE: [0-9a-zA-Z#+-/*]+;
+
+WS: [ \r\t\n]+ -> skip;
 
 /* Parser Rules */
 
@@ -105,9 +105,9 @@ state: START_END_STATE | IDENTIFIER;
 stateDef: state COLON ACTIVITY statement;
 
 statement:
-	p = param ASSIGN_OP r = expression					# FieldDeclrAndExprAssignment
-	| p = param ASSIGN_OP r = (VALUE | STRING_VALUE)	# FieldDeclrAndAssignment
-	| expression										# ExpressionStatement;
+	p = param ASSIGN_OP r = expression	# FieldDeclrAndExprAssignment
+	| p = param ASSIGN_OP r = val		# FieldDeclrAndAssignment
+	| expression						# ExpressionStatement;
 
 // Zustandsübergang. Mit extra "pay" Funktion
 transition:
@@ -138,6 +138,9 @@ type:
 unit: ETHER | WEI;
 
 timeUnit: DAYS;
+
+// Any Value on right side of expression in plantuml file
+val: STRING_VALUE | VALUE;
 
 // Element auf der linken Seite einer Zuweisung
 variable:
