@@ -80,6 +80,9 @@ IDENTIFIER: [a-zA-Z]+;
 // ?. Sorgt dafür, dass der Lexer Leerzeichen etc. als Tokens ignoriert
 WS: [ \r\t\n]+ -> skip;
 
+STRING_VALUE:
+	'"' ('\\"' | .)*? '"'; // match "foo", "\"", "x\"\"y", ...
+
 // GENERIC VALUE (Muss ganz unten in den Lexer Rules stehen, sonst werden alle Tokens dieser Lexer
 // Regel zugewiesen
 VALUE: [0-9a-zA-Z#+-/*"]+;
@@ -102,9 +105,9 @@ state: START_END_STATE | IDENTIFIER;
 stateDef: state COLON ACTIVITY statement;
 
 statement:
-	p = param ASSIGN_OP r = expression	# FieldDeclrAndExprAssignment
-	| p = param ASSIGN_OP r = VALUE		# FieldDeclrAndAssignment
-	| expression						# ExpressionStatement;
+	p = param ASSIGN_OP r = expression					# FieldDeclrAndExprAssignment
+	| p = param ASSIGN_OP r = (VALUE | STRING_VALUE)	# FieldDeclrAndAssignment
+	| expression										# ExpressionStatement;
 
 // Zustandsübergang. Mit extra "pay" Funktion
 transition:
