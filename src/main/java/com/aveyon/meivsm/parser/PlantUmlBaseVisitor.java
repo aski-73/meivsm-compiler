@@ -1,4 +1,4 @@
-// Generated from PlantUml.g4 by ANTLR 4.7.2
+// Generated from PlantUml.g4 by ANTLR 4.10.1
 package com.aveyon.meivsm.parser;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -53,6 +53,20 @@ public class PlantUmlBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitFieldDeclrAndAssignment(PlantUmlParser.FieldDeclrAndAssignmentContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitEmitStatement(PlantUmlParser.EmitStatementContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitTransferStatement(PlantUmlParser.TransferStatementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

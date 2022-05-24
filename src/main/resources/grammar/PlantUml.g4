@@ -52,7 +52,7 @@ WEI: 'wei';
 // Zeiteinheiten
 DAYS: 'days';
 
-SOL_GLOBAL_SENDER: 'sender';
+SOL_GLOBAL_SENDER: 'sender'|'msg.sender';
 SOL_GLOBAL_VALUE: 'msg.value';
 SOL_GLOBAL_DATE: 'now';
 SOL_GLOBAL_DATE2: 'block.timestamp';
@@ -60,6 +60,7 @@ SOL_GLOBAL_DATE2: 'block.timestamp';
 // UML Pfeile (Transitionen)
 ARROW: '->';
 LONG_ARROW: '-->';
+LONG_LONG_ARROW: '--->';
 LONG_ARROW_UP: '-u->';
 LONG_ARROW_DOWN: '-d->';
 LONG_ARROW_LEFT: '-l->';
@@ -68,6 +69,9 @@ LONG_ARROW_RIGHT: '-r->';
 ACTIVITY: 'entry/' | 'exit/';
 
 RETURN: 'return';
+EMIT: 'emit';
+TRANSFER: 'transfer';
+TO: 'to';
 
 SKINPARAM: 'skinparam';
 
@@ -76,6 +80,7 @@ NUMBER: [0-9]+;
 HEX_COLOR: '#' [0-9A-F]+;
 // Bezeichner von Klassen, Attributen
 IDENTIFIER: [a-zA-Z]+;
+OBJECT_ACCESS: [a-zA-Z\\.]+;
 
 STRING_VALUE: '"' ('\\' [\\"] | .)*? '"';
 
@@ -85,14 +90,16 @@ STRING_VALUE: '"' ('\\' [\\"] | .)*? '"';
 // Regel zugewiesen
 VALUE: [0-9a-zA-Z#+-/*]+;
 
-WS: [ \r\t\n]+ -> skip;
+// \\n skips the '\n' literal in the plant uml file
+WS: [ \r\t\n\\n]+ -> skip;
 
 /* Parser Rules */
 
 // Parameter, um Optik des Diagramms zu ändern. Mit eingebaut, damit Parser u. Lexer keine Fehler
 // werfen
 skinParamCmds:
-	SKINPARAM ('Monochrome' | 'Shadowing') (TRUE | FALSE);
+	SKINPARAM ('Monochrome' | 'Shadowing') (TRUE | FALSE)
+	| 'hide empty description';
 
 // Aufbau einer plant uml Datei, in der Zustandsdiagramme erstellt werden
 plantUml:
@@ -105,14 +112,16 @@ state: START_END_STATE | IDENTIFIER;
 stateDef: state COLON ACTIVITY statement;
 
 statement:
-	p = param ASSIGN_OP r = expression	# FieldDeclrAndExprAssignment
-	| p = param ASSIGN_OP r = val		# FieldDeclrAndAssignment
-	| expression						# ExpressionStatement;
+	p = param ASSIGN_OP r = expression	                        # FieldDeclrAndExprAssignment
+	| p = param ASSIGN_OP r = val		                        # FieldDeclrAndAssignment
+	| EMIT exp = expression           		                    # EmitStatement
+	| TRANSFER amount = expression TO receiver = expression     # TransferStatement
+	| expression						                        # ExpressionStatement;
 
 // Zustandsübergang. Mit extra "pay" Funktion
 transition:
-	l = state arrow r = state COLON i = IDENTIFIER									# Trans
-	| l = state arrow r = state COLON i = IDENTIFIER c = condition					# TransCond
+	l = state arrow r = state COLON i = expression      							# Trans
+	| l = state arrow r = state COLON i = expression c = condition					# TransCond
 	| l = state arrow r = state COLON i = 'pay' v = NUMBER u = unit					# TransPay
 	| l = state arrow r = state COLON i = 'pay' v = NUMBER u = unit c = condition	# TransPayCond
 	| l = state arrow r = state COLON i = 'pay*'									# TransPayStar
@@ -145,8 +154,10 @@ val: STRING_VALUE | VALUE;
 // Element auf der linken Seite einer Zuweisung
 variable:
 	SOL_GLOBAL_VALUE
+	| SOL_GLOBAL_SENDER
 	| SOL_GLOBAL_DATE
 	| SOL_GLOBAL_DATE2
+	| OBJECT_ACCESS
 	| IDENTIFIER;
 
 constant: NUMBER | NUMBER unit | NUMBER timeUnit;
@@ -157,15 +168,15 @@ constant: NUMBER | NUMBER unit | NUMBER timeUnit;
 // Assignment-, Additive-Expressions usw. unterscheiden aber das wird im Rahmen der Arbeit vorerst
 // nicht behandelt
 expression:
-	l = expression op = AND r = expression				# CondExpr
-	| l = expression op = OR r = expression				# CondORExpr
-	| lv = expression op = mathOperator rv = expression	# MathOperation
-	| lv = expression op = compOperator rv = expression	# CompOperation
-	| l = variable ASSIGN_OP r = expression				# Assignment
-	| 'sent from' variable								# SentFromExpr
-	| constant											# JustAConstant
-	| variable											# JustAVariable
-	| method											# MethodCall;
+	l = expression op = AND r = expression  				# CondExpr
+	| l = expression op = OR r = expression				    # CondORExpr
+	| lv = expression op = mathOperator rv = expression	    # MathOperation
+	| lv = expression op = compOperator rv = expression	    # CompOperation
+	| l = variable ASSIGN_OP r = expression				    # Assignment
+	| 'sent from' variable								    # SentFromExpr
+	| constant											    # JustAConstant
+	| variable											    # JustAVariable
+	| method											    # MethodCall;
 
 // Parameter für Methoden. Identisch mit zweiter Alternative der attr Regel. Aufgrund der
 // Formatierung nachher im Compiler, aber nicht ander lösbar
@@ -179,6 +190,7 @@ method:
 arrow:
 	ARROW
 	| LONG_ARROW
+	| LONG_LONG_ARROW
 	| LONG_ARROW_UP
 	| LONG_ARROW_DOWN
 	| LONG_ARROW_LEFT

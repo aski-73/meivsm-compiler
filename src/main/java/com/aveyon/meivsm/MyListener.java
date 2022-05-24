@@ -1,34 +1,44 @@
 package com.aveyon.meivsm;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.aveyon.meivsm.parser.PlantUmlBaseListener;
-import com.aveyon.meivsm.parser.PlantUmlParser.AssignmentContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.CompOperationContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.CondExprContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.EmptyTransContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.ExpressionContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.ExpressionStatementContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.FieldDeclrAndAssignmentContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.FieldDeclrAndExprAssignmentContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.JustAConstantContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.JustAVariableContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.MathOperationContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.MethodCallContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.NoParamMethContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.ParamContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.ParamMethContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.PlantUmlContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.SentFromExprContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.StatementContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.TransCondContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.TransContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.TransPayCondContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.TransPayContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.TransPayStarCondContext;
+import com.aveyon.meivsm.parser.PlantUmlParser;
+import com.aveyon.meivsm.parser.PlantUmlParser.*;
+import net.aveyon.intermediate_solidity.*;
+import net.aveyon.intermediate_solidity.impl.*;
+import net.aveyon.intermediate_solidity.util.Pair;
 
+/**
+ * Main listener that gets called during the {@link org.antlr.v4.runtime.tree.ParseTree} walking.
+ * Contains legacy code (direct code generation) and the updated version of creating first a {@link SmartContractModel}
+ * instance that represents the Solidity file that can be extracted a code extractor / code generator.
+ */
 public class MyListener extends PlantUmlBaseListener {
+
+    /**
+     * Concrete instance of the Solidity meta model 'Intermediate Solidity'. Can be used by codde generators.
+     */
+    private SmartContractModel model;
+
+    private SmartContract currentGeneratedSmartContract;
+
+    /**
+     * Main function handling all the interactions with the contract.
+     */
+    private Function handleFunction;
+
+    /**
+     * Main If Statement of the handle function. Controls the flow of the smart contract.
+     */
+    private ExpressionIf handleFunctionIf;
+
+    private String pragma = "<0.9.0";
+    private String license = "GPL-3.0";
 
     private StringBuilder smartContract;
     private List<ParamContext> preFetchedAttributes;
@@ -36,7 +46,9 @@ public class MyListener extends PlantUmlBaseListener {
     private Map<String, List<StatementContext>> stateDefExitActivitiesMap;
     private boolean payStar;
 
-    /** Name des Contracts */
+    /**
+     * Name des Contracts
+     */
     private String smartContractName;
 
     /**
@@ -48,7 +60,7 @@ public class MyListener extends PlantUmlBaseListener {
     boolean transitioned;
 
     public MyListener(List<ParamContext> attributeList, Map<String, List<StatementContext>> stateDefMap,
-            Map<String, List<StatementContext>> stateDefExitActivitiesMap, boolean payStar) {
+                      Map<String, List<StatementContext>> stateDefExitActivitiesMap, boolean payStar) {
         smartContract = new StringBuilder();
         preFetchedAttributes = attributeList;
         this.stateDefEntryActivitiesMap = stateDefMap;
@@ -58,17 +70,22 @@ public class MyListener extends PlantUmlBaseListener {
 
     @Override
     public void enterPlantUml(PlantUmlContext ctx) {
+        model = new SmartContractModelImpl(license, pragma);
+
         smartContractName = ctx.IDENTIFIER().toString();
-        smartContract.append("pragma solidity >=0.5.0 <0.7.0;\n\n");
+        smartContract.append("// SPDX-License-Identifier: " + license);
+        smartContract.append("pragma solidity " + pragma + ";\n\n");
         smartContract.append(String.format("contract %s {\n", smartContractName));
         smartContract.append("\tstring public state = \"START\";\n");
 
+        currentGeneratedSmartContract = new SmartContractImpl(smartContractName);
+        model.getDefinitions().getContracts().add(currentGeneratedSmartContract);
+
         // Wenn das Diagramm eine pay*-Transaktion beinhaltet, werden eine Map und Array
-        // für alle
-        // Sender erzeugt
+        // für alle Sender erzeugt
         if (payStar) {
             smartContract.append("\tstruct Sender {\n" + "\t\taddress payable addr;\n" + "\t\tuint date;\n"
-                    + "\t\tuint val;\n" + "\t}\n");
+                + "\t\tuint val;\n" + "\t}\n");
             smartContract.append("\tSender[] public senders;\n");
             smartContract.append("\tmapping(address => Sender) public senderMap;\n");
         }
@@ -76,18 +93,37 @@ public class MyListener extends PlantUmlBaseListener {
         // Attribute / Fields Deklarationen
         for (ParamContext attrCtx : preFetchedAttributes) {
             // Field/Attribut Deklaration
+            Field f = new FieldImpl(attrCtx.id.getText());
+            f.setType(attrCtx.t.getText());
+            f.setVisibility(Visibility.PUBLIC);
+
             if (attrCtx.t.getText().equals("address")) {
                 smartContract
-                        .append(String.format("\t%s payable public %s;\n", attrCtx.t.getText(), attrCtx.id.getText()));
+                    .append(String.format("\t%s payable public %s;\n", attrCtx.t.getText(), attrCtx.id.getText()));
+
+                f.setPayable(true);
             } else {
                 smartContract.append(String.format("\t%s public %s;\n", attrCtx.t.getText(), attrCtx.id.getText()));
             }
+
+            currentGeneratedSmartContract.getFields().add(f);
         }
 
         // Fallback Function (sinnvolle Implementierung finden)
         // smartContract.append("\tfunction() external {}\n\n");
 
         // Hauptmethode
+        handleFunction = new FunctionImpl("handle");
+        handleFunction.setPayable(true);
+        handleFunction.setVisibility(Visibility.PUBLIC);
+        FunctionParameter param = new FunctionParameterImpl("input");
+        param.setType("string");
+        param.setDataLocation(DataLocation.MEMORY);
+        handleFunction.getParameters().add(param);
+        handleFunctionIf = new ExpressionIfImpl();
+        handleFunction.getExpressions().add(handleFunctionIf);
+        currentGeneratedSmartContract.getDefinitions().getFunctions().add(handleFunction);
+
         smartContract.append("\tfunction handle(string memory input) public payable {\n");
     }
 
@@ -97,13 +133,46 @@ public class MyListener extends PlantUmlBaseListener {
         smartContract.append("\t}\n\n");
 
         // Hilfsfunktionen
-        smartContract.append("\tfunction isEqual(string memory a, string memory b) public pure" + " returns (bool) {\n"
-                + "\t\treturn (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));\n\t}\n\n");
+        Function isEqual = new FunctionImpl("isEqual");
+        isEqual.setVisibility(Visibility.INTERNAL);
+        isEqual.setPure(true);
+        isEqual.getReturns().add("bool");
+        currentGeneratedSmartContract.getDefinitions().getFunctions().add(isEqual);
+        FunctionParameter paramA = new FunctionParameterImpl("a");
+        paramA.setType("string");
+        paramA.setDataLocation(DataLocation.MEMORY);
+        FunctionParameter paramB = new FunctionParameterImpl((paramA));
+        paramB.setName("b");
+        isEqual.getParameters().add(paramA);
+        isEqual.getParameters().add(paramB);
+        isEqual.getExpressions().add(
+            new ExpressionStringImpl("return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))))")
+        );
 
-        smartContract.append("\tfunction transfer(uint amount, address payable receiver) private {\n"
-                + "\t\taddress self = address(this);\n"
-                + "\t\tuint256 balance = self.balance;\n"
-                + "\t\tif (balance >= amount)\n" + "\t\t\treceiver.transfer(amount);\n\t}\n");
+        smartContract.append("\tfunction isEqual(string memory a, string memory b) internal pure" + " returns (bool) {\n"
+            + "\t\treturn (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));\n\t}\n\n");
+
+        Function transfer = new FunctionImpl("transfer");
+        transfer.setVisibility(Visibility.INTERNAL);
+        currentGeneratedSmartContract.getDefinitions().getFunctions().add(transfer);
+        FunctionParameter paramAmount = new FunctionParameterImpl("amount");
+        paramAmount.setType("uint");
+        FunctionParameter paramReceiver = new FunctionParameterImpl("receiver");
+        paramReceiver.setType("address");
+        paramReceiver.setPayable(true);
+        transfer.getParameters().add(paramAmount);
+        transfer.getParameters().add(paramReceiver);
+        transfer.getExpressions().add(new ExpressionStringImpl("address self = address(this)"));
+        transfer.getExpressions().add(new ExpressionStringImpl("uint256 balance = self.balance"));
+        ExpressionIf transferIf = new ExpressionIfImpl();
+        transferIf.getConditions().add(new Pair<>("if (balance >= amount)", new LinkedList<>()));
+        transferIf.getConditions().get(0).getSecond().add(new ExpressionStringImpl("receiver.transfer(amount)"));
+        transfer.getExpressions().add(transferIf);
+
+        smartContract.append("\tfunction transfer(uint amount, address payable receiver) internal {\n"
+            + "\t\taddress self = address(this);\n"
+            + "\t\tuint256 balance = self.balance;\n"
+            + "\t\tif (balance >= amount)\n" + "\t\t\treceiver.transfer(amount);\n\t}\n");
 
         if (payStar) {
             smartContract.append("\tfunction returnPayments() private {\n");
@@ -137,28 +206,11 @@ public class MyListener extends PlantUmlBaseListener {
         }
 
         // Eine Aktion kann erst dann ausgeführt werden, wenn Smart Contract sich im
-        // Linken Zustand
-        // befindet und das Eingabewort gleich dem im Diagramm definierten Wort ist
-        String ifStmt = String.format("\t\t%s (isEqual(state, \"%s\") && isEqual(input, \"%s\")) {\n",
-                transitioned ? "else if" : "if", state, ctx.i.getText());
-        smartContract.append(ifStmt);
+        // Linken Zustand befindet und das Eingabewort gleich dem im Diagramm definierten Wort ist
+        String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\") && isEqual(input, \"%s\"))",
+            transitioned ? "else if" : "if", state, ctx.i.getText());
 
-        // Zustand auf der rechten Seite. Smart Contract wechselt in den Zustand auf der
-        // rechten
-        // Seite
-        String newState = ctx.r.getText().toUpperCase();
-
-        // Ist in PlantUML der rechte Zustand [*] bedeutet dies einen Endzustand
-        if (newState.equals("[*]")) {
-            newState = "END";
-        }
-
-        smartContract.append(String.format("\t\t\tstate = \"%s\";\n", newState));
-
-        // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
-        smartContract.append(evalState(newState, state));
-
-        transitioned = true;
+        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
     }
 
     @Override
@@ -181,26 +233,10 @@ public class MyListener extends PlantUmlBaseListener {
 
         // Erstellt pay Transaktion mit vom User angegebenen Geldbetrag. Smart Contract
         // muss sich aber zunächst im linken Zustand befinden
-        String ifStmt = String.format(
-                "\t\t%s (isEqual(state, \"%s\") && isEqual(input, \"pay\") && msg.value == %s %s) {\n",
-                transitioned ? "else if" : "if", state, ctx.v.getText(), ctx.u.getText());
-        smartContract.append(ifStmt);
-
-        // Zustand auf der rechten Seite. Smart Contract wechselt in den Zustand auf der
-        // rechten Seite
-        String newState = ctx.r.getText().toUpperCase();
-
-        // Ist in PlantUML der rechte Zustand [*] bedeutet dies einen Endzustand
-        if (newState.equals("[*]")) {
-            newState = "END";
-        }
-
-        smartContract.append(String.format("\t\t\tstate = \"%s\";\n", newState));
-
-        // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
-        smartContract.append(evalState(newState, state));
-
-        transitioned = true;
+        String ifStmtTrimmed = String.format(
+            "%s (isEqual(state, \"%s\") && isEqual(input, \"pay\") && msg.value == %s %s)",
+            transitioned ? "else if" : "if", state, ctx.v.getText(), ctx.u.getText());
+        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
     }
 
     @Override
@@ -221,26 +257,10 @@ public class MyListener extends PlantUmlBaseListener {
 
         // Erstellt pay Transaktion mit vom User angegebenen Geldbetrag. Smart Contract
         // muss sich aber zunächst im linken Zustand befinden
-        String ifStmt = String.format(
-                "\t\t%s (isEqual(state, \"%s\") && isEqual(input, \"pay\") && msg.value == %s %s && %s) {\n",
-                transitioned ? "else if" : "if", state, ctx.v.getText(), ctx.u.getText(), expression);
-        smartContract.append(ifStmt);
-
-        // Zustand auf der rechten Seite. Smart Contract wechselt in den Zustand auf der
-        // rechten Seite
-        String newState = ctx.r.getText().toUpperCase();
-
-        // Ist in PlantUML der rechte Zustand [*] bedeutet dies einen Endzustand
-        if (newState.equals("[*]")) {
-            newState = "END";
-        }
-
-        smartContract.append(String.format("\t\t\tstate = \"%s\";\n", newState));
-
-        // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
-        smartContract.append(evalState(newState, state));
-
-        transitioned = true;
+        String ifStmtTrimmed = String.format(
+            "%s (isEqual(state, \"%s\") && isEqual(input, \"pay\") && msg.value == %s %s && %s)",
+            transitioned ? "else if" : "if", state, ctx.v.getText(), ctx.u.getText(), expression);
+        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
     }
 
     @Override
@@ -258,22 +278,9 @@ public class MyListener extends PlantUmlBaseListener {
         // Vergleichsausdruck
         String expression = evalExpression(ctx.c.expression());
 
-        smartContract.append(String.format("\t\t%s (isEqual(state, \"%s\") && isEqual(input, \"%s\") && %s) {\n",
-                transitioned ? "else if" : "if", state, ctx.i.getText(), expression));
-
-        String newState = ctx.r.getText().toUpperCase();
-
-        // Ist in PlantUML der rechte Zustand [*] bedeutet dies einen Endzustand
-        if (newState.equals("[*]")) {
-            newState = "END";
-        }
-
-        smartContract.append(String.format("\t\t\tstate = \"%s\";\n", newState));
-
-        // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
-        smartContract.append(evalState(newState, state));
-
-        transitioned = true;
+        String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\") && isEqual(input, \"%s\") && %s)",
+            transitioned ? "else if" : "if", state, ctx.i.getText(), expression);
+        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
     }
 
     @Override
@@ -296,7 +303,7 @@ public class MyListener extends PlantUmlBaseListener {
         String expression = evalExpression(ctx.c.expression());
 
         smartContract.append(String.format("\t\t%s (isEqual(state, \"%s\") && isEqual(input, \"%s\") && %s) {\n",
-                transitioned ? "else if" : "if", state, ctx.i.getText(), expression));
+            transitioned ? "else if" : "if", state, ctx.i.getText(), expression));
 
         // Für pay* Transaktion jeden Sender als Struktur in einem Array und Map
         // speichern
@@ -323,10 +330,6 @@ public class MyListener extends PlantUmlBaseListener {
         smartContract.append("\t\t}\n");
     }
 
-    /**
-     * Transitionen ohne Eingabewort sollen nicht existieren daher deprecated
-     */
-    @Deprecated
     @Override
     public void enterEmptyTrans(EmptyTransContext ctx) {
         String state = "START";
@@ -334,19 +337,10 @@ public class MyListener extends PlantUmlBaseListener {
             state = ctx.l.getText().toUpperCase();
         }
 
-        smartContract
-                .append(String.format("\t\t%s (isEqual(state, \"%s\")) {\n", transitioned ? "else if" : "if", state));
-
-        String newState = ctx.r.getText().toUpperCase();
-        smartContract.append(String.format("\t\t\tstate = \"%s\";\n", newState));
-
-        // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
-        smartContract.append(evalState(newState, state));
-
-        transitioned = true;
+        String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\"))", transitioned ? "else if" : "if", state);
+        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
     }
 
-    @Deprecated()
     @Override
     public void exitEmptyTrans(EmptyTransContext ctx) {
         smartContract.append("\t\t}\n");
@@ -369,11 +363,15 @@ public class MyListener extends PlantUmlBaseListener {
             for (StatementContext sCtx : stateDefExitActivitiesMap.get(oldState)) {
                 if (sCtx instanceof FieldDeclrAndExprAssignmentContext) {
                     statement.append(
-                            enterFieldDeclrAndExprAssignmentReturnsString((FieldDeclrAndExprAssignmentContext) sCtx));
+                        enterFieldDeclrAndExprAssignmentReturnsString((FieldDeclrAndExprAssignmentContext) sCtx));
                 } else if (sCtx instanceof FieldDeclrAndAssignmentContext) {
                     statement.append(enterFieldDeclrAndAssignmentReturnsString((FieldDeclrAndAssignmentContext) sCtx));
                 } else if (sCtx instanceof ExpressionStatementContext) {
                     statement.append(evalExpression(((ExpressionStatementContext) sCtx).expression()));
+                } else if (sCtx instanceof EmitStatementContext) {
+                    statement.append(enterEmitStatementReturnsString((EmitStatementContext) sCtx));
+                } else if (sCtx instanceof TransferStatementContext) {
+                    statement.append(enterTransferStatementReturnsString((TransferStatementContext) sCtx));
                 }
             }
         }
@@ -383,11 +381,15 @@ public class MyListener extends PlantUmlBaseListener {
             for (StatementContext sCtx : stateDefEntryActivitiesMap.get(state)) {
                 if (sCtx instanceof FieldDeclrAndExprAssignmentContext) {
                     statement.append(
-                            enterFieldDeclrAndExprAssignmentReturnsString((FieldDeclrAndExprAssignmentContext) sCtx));
+                        enterFieldDeclrAndExprAssignmentReturnsString((FieldDeclrAndExprAssignmentContext) sCtx));
                 } else if (sCtx instanceof FieldDeclrAndAssignmentContext) {
                     statement.append(enterFieldDeclrAndAssignmentReturnsString((FieldDeclrAndAssignmentContext) sCtx));
                 } else if (sCtx instanceof ExpressionStatementContext) {
                     statement.append(evalExpression(((ExpressionStatementContext) sCtx).expression()));
+                } else if (sCtx instanceof EmitStatementContext) {
+                    statement.append(enterEmitStatementReturnsString((EmitStatementContext) sCtx));
+                } else if (sCtx instanceof TransferStatementContext) {
+                    statement.append(enterTransferStatementReturnsString((TransferStatementContext) sCtx));
                 }
             }
         }
@@ -411,6 +413,27 @@ public class MyListener extends PlantUmlBaseListener {
      */
     public String enterFieldDeclrAndAssignmentReturnsString(FieldDeclrAndAssignmentContext ctx) {
         return String.format("\t\t\t%s = %s;\n", ctx.p.id.getText(), ctx.r.getText());
+    }
+
+    /**
+     * Wird nur dann aufgerufen, wenn StateDef der Elternknoten ist => nur innerhalb
+     * der handle()-Funktion.
+     *
+     * Kümmert um das 'emit event()' Statements
+     */
+    public String enterEmitStatementReturnsString(EmitStatementContext ctx) {
+        return String.format("\t\t\temit %s;\n", ctx.exp.getText());
+    }
+
+    /**
+     * Wird nur dann aufgerufen, wenn StateDef der Elternknoten ist => nur innerhalb
+     * der handle()-Funktion.
+     *
+     * Kümmert um das 'transfer xx to yy ' Statements, indem es zu einem Aufruf der vordefinierten transfer() Methode
+     * übersetzt wird
+     */
+    public String enterTransferStatementReturnsString(TransferStatementContext ctx) {
+        return String.format("\t\t\ttransfer(%s, %s);\n", ctx.amount.getText(), ctx.receiver.getText());
     }
 
     /**
@@ -547,6 +570,42 @@ public class MyListener extends PlantUmlBaseListener {
         return sb.toString();
     }
 
+    private void addIfStatement(String ifStmtTrimmed, String state, String newState) {
+        String ifStmt = String.format("\t\t%s {\n", ifStmtTrimmed);
+        smartContract.append(ifStmt);
+        handleFunctionIf.getConditions().add(new Pair<>(ifStmtTrimmed, new LinkedList<>()));
+
+        // Zustand auf der rechten Seite. Smart Contract wechselt in den Zustand auf der
+        // rechten Seite
+        // Ist in PlantUML der rechte Zustand [*] bedeutet dies einen Endzustand
+        if (newState.equals("[*]")) {
+            newState = "END";
+        }
+        String stateTransition = String.format("state = \"%s\"", newState);
+        handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond()
+            .add(new ExpressionStringImpl(stateTransition));
+        smartContract.append(String.format("\t\t\t%s;\n", stateTransition));
+        // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
+        String stateActivities = evalState(newState, state);
+        smartContract.append(stateActivities);
+        trimEvalStateValueAndAddToIfFunction(stateActivities);
+
+        transitioned = true;
+    }
+
+    /**
+     * Helper function
+     * Adds an output of {@link #evalState(String, String)} into the last element {@link #handleFunctionIf} List
+     * in order to build the if command of the handle function.
+     *
+     * @param evalState output of {@link #evalState(String, String)}
+     */
+    private void trimEvalStateValueAndAddToIfFunction(String evalState) {
+        Stream.of(evalState.trim().replaceAll("\\t", "").split("[;\\n]"))
+            .filter(it -> it.length() > 0)
+            .forEach(it -> handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond().add(new ExpressionStringImpl(it)));
+    }
+
     /**
      * @return the smartContract
      */
@@ -554,11 +613,7 @@ public class MyListener extends PlantUmlBaseListener {
         return smartContract;
     }
 
-    public String getSmartContractName() {
-        return smartContractName;
-    }
-
-    public void setSmartContractName(String smartContractName) {
-        this.smartContractName = smartContractName;
+    public SmartContractModel getModel() {
+        return model;
     }
 }

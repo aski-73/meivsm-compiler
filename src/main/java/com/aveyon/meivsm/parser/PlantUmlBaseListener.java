@@ -1,4 +1,4 @@
-// Generated from PlantUml.g4 by ANTLR 4.7.2
+// Generated from PlantUml.g4 by ANTLR 4.10.1
 package com.aveyon.meivsm.parser;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -83,6 +83,30 @@ public class PlantUmlBaseListener implements PlantUmlListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitFieldDeclrAndAssignment(PlantUmlParser.FieldDeclrAndAssignmentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterEmitStatement(PlantUmlParser.EmitStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEmitStatement(PlantUmlParser.EmitStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTransferStatement(PlantUmlParser.TransferStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTransferStatement(PlantUmlParser.TransferStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -1,4 +1,4 @@
-// Generated from PlantUml.g4 by ANTLR 4.7.2
+// Generated from PlantUml.g4 by ANTLR 4.10.1
 package com.aveyon.meivsm.parser;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -71,6 +71,30 @@ public interface PlantUmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFieldDeclrAndAssignment(PlantUmlParser.FieldDeclrAndAssignmentContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code EmitStatement}
+	 * labeled alternative in {@link PlantUmlParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterEmitStatement(PlantUmlParser.EmitStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code EmitStatement}
+	 * labeled alternative in {@link PlantUmlParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitEmitStatement(PlantUmlParser.EmitStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code TransferStatement}
+	 * labeled alternative in {@link PlantUmlParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterTransferStatement(PlantUmlParser.TransferStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code TransferStatement}
+	 * labeled alternative in {@link PlantUmlParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitTransferStatement(PlantUmlParser.TransferStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code ExpressionStatement}
 	 * labeled alternative in {@link PlantUmlParser#statement}.

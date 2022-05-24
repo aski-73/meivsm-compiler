@@ -1,4 +1,4 @@
-// Generated from PlantUml.g4 by ANTLR 4.7.2
+// Generated from PlantUml.g4 by ANTLR 4.10.1
 package com.aveyon.meivsm.parser;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -48,6 +48,20 @@ public interface PlantUmlVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFieldDeclrAndAssignment(PlantUmlParser.FieldDeclrAndAssignmentContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code EmitStatement}
+	 * labeled alternative in {@link PlantUmlParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEmitStatement(PlantUmlParser.EmitStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code TransferStatement}
+	 * labeled alternative in {@link PlantUmlParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTransferStatement(PlantUmlParser.TransferStatementContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ExpressionStatement}
 	 * labeled alternative in {@link PlantUmlParser#statement}.
