@@ -1,15 +1,15 @@
-package com.aveyon.meivsm;
+package net.aveyon.meivsm;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.aveyon.meivsm.parser.PlantUmlBaseListener;
-import com.aveyon.meivsm.parser.PlantUmlParser.ParamContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.StateDefContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.StatementContext;
-import com.aveyon.meivsm.parser.PlantUmlParser.TransPayStarCondContext;
+import net.aveyon.meivsm.parser.PlantUmlBaseListener;
+import net.aveyon.meivsm.parser.PlantUmlParser.ParamContext;
+import net.aveyon.meivsm.parser.PlantUmlParser.StateDefContext;
+import net.aveyon.meivsm.parser.PlantUmlParser.StatementContext;
+import net.aveyon.meivsm.parser.PlantUmlParser.TransPayStarCondContext;
 
 public class PreListener extends PlantUmlBaseListener {
 

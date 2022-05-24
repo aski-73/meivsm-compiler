@@ -1,4 +1,4 @@
-package com.aveyon.meivsm;
+package net.aveyon.meivsm;
 
 import net.aveyon.intermediate_solidity.ExpressionIf;
 import net.aveyon.intermediate_solidity.SmartContractModel;
@@ -9,14 +9,6 @@ import static org.junit.Assert.*;
 
 import java.io.*;
 import java.util.Objects;
-
-import com.aveyon.meivsm.parser.PlantUmlLexer;
-import com.aveyon.meivsm.parser.PlantUmlParser;
-
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 
 public class AppTest {
 

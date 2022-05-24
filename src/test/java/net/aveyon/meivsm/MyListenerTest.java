@@ -1,4 +1,4 @@
-package com.aveyon.meivsm;
+package net.aveyon.meivsm;
 
 import static org.junit.Assert.assertEquals;
 

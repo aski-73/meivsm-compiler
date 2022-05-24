@@ -1,14 +1,12 @@
-package com.aveyon.meivsm;
+package net.aveyon.meivsm;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.aveyon.meivsm.parser.PlantUmlBaseListener;
-import com.aveyon.meivsm.parser.PlantUmlParser;
-import com.aveyon.meivsm.parser.PlantUmlParser.*;
+import net.aveyon.meivsm.parser.PlantUmlBaseListener;
+import net.aveyon.meivsm.parser.PlantUmlParser.*;
 import net.aveyon.intermediate_solidity.*;
 import net.aveyon.intermediate_solidity.impl.*;
 import net.aveyon.intermediate_solidity.util.Pair;

@@ -1,4 +1,4 @@
-package com.aveyon.meivsm;
+package net.aveyon.meivsm;
 
 import net.aveyon.intermediate_solidity.SmartContractModel;
 

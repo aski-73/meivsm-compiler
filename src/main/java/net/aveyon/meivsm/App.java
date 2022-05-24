@@ -1,13 +1,10 @@
-package com.aveyon.meivsm;
+package net.aveyon.meivsm;
 
 import java.io.*;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
-import com.aveyon.meivsm.parser.PlantUmlLexer;
-import com.aveyon.meivsm.parser.PlantUmlParser;
+import net.aveyon.meivsm.parser.PlantUmlLexer;
+import net.aveyon.meivsm.parser.PlantUmlParser;
 
 import net.aveyon.intermediate_solidity.SmartContractModel;
 import net.aveyon.intermediate_solidity_extractor.IntermediateSolidityExtractor;
