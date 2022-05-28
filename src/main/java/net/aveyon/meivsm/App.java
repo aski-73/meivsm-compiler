@@ -3,6 +3,7 @@ package net.aveyon.meivsm;
 import java.io.*;
 import java.util.Objects;
 
+import net.aveyon.intermediate_solidity.util.Pair;
 import net.aveyon.meivsm.parser.PlantUmlLexer;
 import net.aveyon.meivsm.parser.PlantUmlParser;
 
@@ -47,11 +48,11 @@ public final class App implements Api {
 
     public String compile(InputStream plantUmlFile) throws IOException {
         IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
-        return extractor.generateSmartContractModel(parse(plantUmlFile));
+        return extractor.generateSmartContractModel(parse(plantUmlFile).getFirst());
     }
 
     @Override
-    public SmartContractModel parse(InputStream plantUmlFile) throws IOException {
+    public Pair<SmartContractModel, MetaInformation> parse(InputStream plantUmlFile) throws IOException {
         return walkParseTree(createParseTree(plantUmlFile));
     }
 
@@ -74,20 +75,20 @@ public final class App implements Api {
      * @param parseTree A parse tree representing a solidity file created by the solidity parser
      * @return A {@link SmartContractModel} instance representing the provided parseTree
      */
-    private static SmartContractModel walkParseTree(ParseTree parseTree) {
+    private static Pair<SmartContractModel, MetaInformation> walkParseTree(ParseTree parseTree) {
 
         ParseTreeWalker walker = new ParseTreeWalker();
 
         PreListener preListener = new PreListener();
         walker.walk(preListener, parseTree);
 
-        MyListener listener = new MyListener(preListener.getAttributesList(),
+        MainListener listener = new MainListener(preListener.getAttributesList(),
             preListener.getStateDefEntryActivitiesMap(), preListener.getStateDefExitActivitiesMap(),
             preListener.isPayStar());
         walker.walk(listener, parseTree);
 
         System.out.println(listener.getSmartContract().toString());
 
-        return listener.getModel();
+        return new Pair(listener.getModel(), listener.getMetaInformation());
     }
 }

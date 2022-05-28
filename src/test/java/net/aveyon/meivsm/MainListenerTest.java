@@ -13,15 +13,15 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.junit.Before;
 
-public class MyListenerTest {
+public class MainListenerTest {
 
-    private MyListener testSubject;
+    private MainListener testSubject;
 
     private ParseTreeWalker walker;
 
     @Before
     public void setUp() {
-        testSubject = new MyListener(new LinkedList<>(), new HashMap<>(), new HashMap<>(), false);
+        testSubject = new MainListener(new LinkedList<>(), new HashMap<>(), new HashMap<>(), false);
         walker = new ParseTreeWalker();
 
     }

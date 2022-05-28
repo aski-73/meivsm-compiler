@@ -1,5 +1,6 @@
 package net.aveyon.meivsm;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,7 @@ import net.aveyon.intermediate_solidity.util.Pair;
  * Contains legacy code (direct code generation) and the updated version of creating first a {@link SmartContractModel}
  * instance that represents the Solidity file that can be extracted a code extractor / code generator.
  */
-public class MyListener extends PlantUmlBaseListener {
+public class MainListener extends PlantUmlBaseListener {
 
     /**
      * Concrete instance of the Solidity meta model 'Intermediate Solidity'. Can be used by codde generators.
@@ -44,6 +45,8 @@ public class MyListener extends PlantUmlBaseListener {
     private Map<String, List<StatementContext>> stateDefExitActivitiesMap;
     private boolean payStar;
 
+    private MetaInformation metaInformation = new MetaInformation();
+
     /**
      * Name des Contracts
      */
@@ -57,8 +60,8 @@ public class MyListener extends PlantUmlBaseListener {
      */
     boolean transitioned;
 
-    public MyListener(List<ParamContext> attributeList, Map<String, List<StatementContext>> stateDefMap,
-                      Map<String, List<StatementContext>> stateDefExitActivitiesMap, boolean payStar) {
+    public MainListener(List<ParamContext> attributeList, Map<String, List<StatementContext>> stateDefMap,
+                        Map<String, List<StatementContext>> stateDefExitActivitiesMap, boolean payStar) {
         smartContract = new StringBuilder();
         preFetchedAttributes = attributeList;
         this.stateDefEntryActivitiesMap = stateDefMap;
@@ -209,12 +212,38 @@ public class MyListener extends PlantUmlBaseListener {
             transitioned ? "else if" : "if", state, ctx.i.getText());
 
         addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
+
+        addTransitionMapEntry(ctx.r.getText(), ctx);
     }
 
     @Override
     public void exitTrans(TransContext ctx) {
         smartContract.append("\t\t}\n");
     }
+
+
+    @Override
+    public void enterTransCond(TransCondContext ctx) {
+        String state = "START";
+        if (!ctx.l.getText().equals("[*]")) {
+            state = ctx.l.getText().toUpperCase();
+        }
+
+        // Vergleichsausdruck
+        String expression = evalExpression(ctx.c.expression());
+
+        String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\") && isEqual(input, \"%s\") && %s)",
+            transitioned ? "else if" : "if", state, ctx.i.getText(), expression);
+        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
+
+        addTransitionMapEntry(ctx.r.getText(), ctx);
+    }
+
+    @Override
+    public void exitTransCond(TransCondContext ctx) {
+        smartContract.append("\t\t}\n");
+    }
+
 
     /**
      * Verarbeiten einer Transaktion mit dem Eingabewort 'pay' und einem Geldbetrag
@@ -235,6 +264,8 @@ public class MyListener extends PlantUmlBaseListener {
             "%s (isEqual(state, \"%s\") && isEqual(input, \"pay\") && msg.value == %s %s)",
             transitioned ? "else if" : "if", state, ctx.v.getText(), ctx.u.getText());
         addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
+
+        addTransitionMapEntry(ctx.r.getText(), ctx);
     }
 
     @Override
@@ -259,30 +290,12 @@ public class MyListener extends PlantUmlBaseListener {
             "%s (isEqual(state, \"%s\") && isEqual(input, \"pay\") && msg.value == %s %s && %s)",
             transitioned ? "else if" : "if", state, ctx.v.getText(), ctx.u.getText(), expression);
         addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
+
+        addTransitionMapEntry(ctx.r.getText(), ctx);
     }
 
     @Override
     public void exitTransPayCond(TransPayCondContext ctx) {
-        smartContract.append("\t\t}\n");
-    }
-
-    @Override
-    public void enterTransCond(TransCondContext ctx) {
-        String state = "START";
-        if (!ctx.l.getText().equals("[*]")) {
-            state = ctx.l.getText().toUpperCase();
-        }
-
-        // Vergleichsausdruck
-        String expression = evalExpression(ctx.c.expression());
-
-        String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\") && isEqual(input, \"%s\") && %s)",
-            transitioned ? "else if" : "if", state, ctx.i.getText(), expression);
-        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
-    }
-
-    @Override
-    public void exitTransCond(TransCondContext ctx) {
         smartContract.append("\t\t}\n");
     }
 
@@ -337,6 +350,8 @@ public class MyListener extends PlantUmlBaseListener {
 
         String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\"))", transitioned ? "else if" : "if", state);
         addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
+
+        addTransitionMapEntry(ctx.r.getText(), ctx);
     }
 
     @Override
@@ -592,6 +607,31 @@ public class MyListener extends PlantUmlBaseListener {
     }
 
     /**
+     * Adds entries to {@link MetaInformation#getIncomingTransitionMap()}.
+     * @param stateName Name of a state
+     * @param t the incoming transitions to the state
+     */
+    private void addTransitionMapEntry(String stateName, TransitionContext t) {
+        if (!metaInformation.getIncomingTransitionMap().containsKey(stateName.toUpperCase())) {
+            metaInformation.getIncomingTransitionMap().put(stateName.toUpperCase(), new LinkedList<>());
+        }
+        Function f;
+        if (t instanceof TransContext) {
+            f = new FunctionImpl(((TransContext) t).i.getText());
+        } else if ((t instanceof TransCondContext)) {
+            f = new FunctionImpl(((TransCondContext) t).i.getText());
+        } else if ((t instanceof TransPayContext)) {
+            f = new FunctionImpl(((TransPayContext) t).i.getText());
+        } else if ((t instanceof TransPayCondContext)) {
+            f = new FunctionImpl(((TransPayCondContext) t).i.getText());
+        } else {
+            f = null;
+        }
+
+        metaInformation.getIncomingTransitionMap().get(stateName.toUpperCase()).add(f);
+    }
+
+    /**
      * Helper function
      * Adds an output of {@link #evalState(String, String)} into the last element {@link #handleFunctionIf} List
      * in order to build the if command of the handle function.
@@ -613,5 +653,9 @@ public class MyListener extends PlantUmlBaseListener {
 
     public SmartContractModel getModel() {
         return model;
+    }
+
+    public MetaInformation getMetaInformation() {
+        return metaInformation;
     }
 }

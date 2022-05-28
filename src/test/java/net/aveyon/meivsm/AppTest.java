@@ -2,6 +2,7 @@ package net.aveyon.meivsm;
 
 import net.aveyon.intermediate_solidity.ExpressionIf;
 import net.aveyon.intermediate_solidity.SmartContractModel;
+import net.aveyon.intermediate_solidity.util.Pair;
 import net.aveyon.intermediate_solidity_extractor.IntermediateSolidityExtractor;
 import org.junit.Test;
 
@@ -23,11 +24,11 @@ public class AppTest {
     @Test
     public void compileStringAttributeWithWhitespaces() throws IOException {
         // GIVEN
-        String givenPlantUml = ""+
-"@startuml testContract\n" +
-"[*] -> test\n" +
-"test: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"\n" +
-"@enduml\n";
+        String givenPlantUml = "" +
+            "@startuml testContract\n" +
+            "[*] -> test\n" +
+            "test: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"\n" +
+            "@enduml\n";
 
         // WHEN
         String contract = new App().compile(new ByteArrayInputStream(givenPlantUml.getBytes()));
@@ -41,20 +42,20 @@ public class AppTest {
     public void appGeneratesCorrectSmartContractModel() throws IOException {
         // GIVEN
         String givenPlantUml =
-"@startuml testContract\n" +
-"[*] -> test\n" +
-"test: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"\n" +
-"@enduml\n";
+            "@startuml testContract\n" +
+                "[*] -> test\n" +
+                "test: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"\n" +
+                "@enduml\n";
 
         // WHEN
-        SmartContractModel model = new App().parse(new ByteArrayInputStream(givenPlantUml.getBytes()));
+        Pair<SmartContractModel, MetaInformation> model = new App().parse(new ByteArrayInputStream(givenPlantUml.getBytes()));
         IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
-        System.out.println(extractor.generateSmartContractModel(model));
+        System.out.println(extractor.generateSmartContractModel(model.getFirst()));
         // THEN
 
-        assertEquals(model.getDefinitions().getContracts().get(0).getName(), "testContract");
-        assertNotNull(model.getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0));
-        assertTrue(model.getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getExpressions().get(0) instanceof ExpressionIf);
+        assertEquals(model.getFirst().getDefinitions().getContracts().get(0).getName(), "testContract");
+        assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0));
+        assertTrue(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getExpressions().get(0) instanceof ExpressionIf);
     }
 
     @Test
@@ -65,17 +66,34 @@ public class AppTest {
         FileInputStream fis = new FileInputStream(plantUmlFile);
 
         // WHEN
-        SmartContractModel model = new App().parse(fis);
+        Pair<SmartContractModel, MetaInformation> model = new App().parse(fis);
         IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
-        System.out.println(extractor.generateSmartContractModel(model));
+        System.out.println(extractor.generateSmartContractModel(model.getFirst()));
 
         // THEN
-        ExpressionIf handleFunctionIf = (ExpressionIf) model.getDefinitions()
+        ExpressionIf handleFunctionIf = (ExpressionIf) model.getFirst().getDefinitions()
             .getContracts().get(0)
             .getDefinitions()
             .getFunctions().get(0)
             .getExpressions().get(0);
 
         assertEquals(handleFunctionIf.getConditions().size(), 8);
+    }
+
+    @Test
+    public void appGeneratesIncomingTransitionMapWith2EntriesForExampleState() throws IOException {
+        // GIVEN
+        String givenPlantUml =
+            "@startuml testContract\n" +
+                "[*] -> Test: call()\n" +
+                "Test -> ExampleState: read()\n" +
+                "[*] -> ExampleState: directRead()\n" +
+                "@enduml\n";
+
+        // WHEN
+        Pair<SmartContractModel, MetaInformation> model = new App().parse(new ByteArrayInputStream(givenPlantUml.getBytes()));
+
+        // THEN
+        assertEquals(2, model.getSecond().getIncomingTransitionMap().get("ExampleState".toUpperCase()).size());
     }
 }
