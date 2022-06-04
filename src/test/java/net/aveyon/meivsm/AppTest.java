@@ -43,23 +43,31 @@ public class AppTest {
         // GIVEN
         String givenPlantUml =
             "@startuml testContract\n" +
-                "[*] -> test\n" +
-                "test: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"\n" +
+                "[*] -> StateA\n" +
+                "StateA: entry/ i: int = 1\n" +
+                "StateA -> StateB\n" +
+                "StateB: entry/ title: string = \"IrgendeinProjekt Mit Leerzeichen\"\n" +
                 "@enduml\n";
 
         // WHEN
+        App.inspect(new ByteArrayInputStream(givenPlantUml.getBytes()));
         Pair<SmartContractModel, MetaInformation> model = new App().parse(new ByteArrayInputStream(givenPlantUml.getBytes()));
         IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
         System.out.println(extractor.generateSmartContractModel(model.getFirst()));
-        // THEN
 
-        assertEquals(model.getFirst().getDefinitions().getContracts().get(0).getName(), "testContract");
+        // THEN
+        // correct contract name
+        assertEquals("testContract", model.getFirst().getDefinitions().getContracts().get(0).getName());
+        // has 3 expression in constructor (comment, state transition and value assignment)
+        assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor().getExpressions().size());
+        // has the handle function
         assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0));
+        // handle function contains an if expression
         assertTrue(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getExpressions().get(0) instanceof ExpressionIf);
     }
 
     @Test
-    public void appGeneratesCorrectPurchaseContractModelWith8States() throws IOException {
+    public void appGeneratesCorrectPurchaseContractModelWith7IfConditions() throws IOException {
         // GIVEN
         String plantUmlFile = Objects.requireNonNull(this.getClass().getClassLoader().getResource("purchase_test.plantuml"))
             .getPath();
@@ -77,7 +85,7 @@ public class AppTest {
             .getFunctions().get(0)
             .getExpressions().get(0);
 
-        assertEquals(handleFunctionIf.getConditions().size(), 8);
+        assertEquals(handleFunctionIf.getConditions().size(), 7);
     }
 
     @Test

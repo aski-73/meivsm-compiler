@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.aveyon.meivsm.parser.PlantUmlBaseListener;
@@ -35,6 +36,12 @@ public class MainListener extends PlantUmlBaseListener {
      * Main If Statement of the handle function. Controls the flow of the smart contract.
      */
     private ExpressionIf handleFunctionIf;
+
+    /**
+     * Every contract has a constructor, which contains the entry activities of the target states whose tranisiton
+     * originated from the initial state.
+     */
+    private final Constructor constructor = new ConstructorImpl();
 
     private String pragma = "<0.9.0";
     private String license = "GPL-3.0";
@@ -112,6 +119,9 @@ public class MainListener extends PlantUmlBaseListener {
 
         // Fallback Function (sinnvolle Implementierung finden)
         // smartContract.append("\tfunction() external {}\n\n");
+
+        // Konstruktor
+        currentGeneratedSmartContract.getDefinitions().setConstructor(constructor);
 
         // Hauptmethode
         handleFunction = new FunctionImpl("handle");
@@ -431,7 +441,7 @@ public class MainListener extends PlantUmlBaseListener {
     /**
      * Wird nur dann aufgerufen, wenn StateDef der Elternknoten ist => nur innerhalb
      * der handle()-Funktion.
-     *
+     * <p>
      * Kümmert um das 'emit event()' Statements
      */
     public String enterEmitStatementReturnsString(EmitStatementContext ctx) {
@@ -441,7 +451,7 @@ public class MainListener extends PlantUmlBaseListener {
     /**
      * Wird nur dann aufgerufen, wenn StateDef der Elternknoten ist => nur innerhalb
      * der handle()-Funktion.
-     *
+     * <p>
      * Kümmert um das 'transfer xx to yy ' Statements, indem es zu einem Aufruf der vordefinierten transfer() Methode
      * übersetzt wird
      */
@@ -584,32 +594,48 @@ public class MainListener extends PlantUmlBaseListener {
     }
 
     private void addIfStatement(String ifStmtTrimmed, String state, String newState) {
-        String ifStmt = String.format("\t\t%s {\n", ifStmtTrimmed);
-        smartContract.append(ifStmt);
-        handleFunctionIf.getConditions().add(new Pair<>(ifStmtTrimmed, new LinkedList<>()));
-
         // Zustand auf der rechten Seite. Smart Contract wechselt in den Zustand auf der
         // rechten Seite
         // Ist in PlantUML der rechte Zustand [*] bedeutet dies einen Endzustand
         if (newState.equals("[*]")) {
             newState = "END";
         }
+
         String stateTransition = String.format("state = \"%s\"", newState);
-        handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond()
-            .add(new ExpressionStringImpl(stateTransition));
-        smartContract.append(String.format("\t\t\t%s;\n", stateTransition));
+        Expression stateTransitionExpression = new ExpressionStringImpl(stateTransition);
+
         // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
         String stateActivities = evalState(newState, state);
-        smartContract.append(stateActivities);
-        trimEvalStateValueAndAddToIfFunction(stateActivities);
 
-        transitioned = true;
+        if (state.equals("START")) {
+            // Zustand auf der linken Seite ist der Startzustand => Alle Aktivitäten des Zielzustands
+            // in den Konstruktor hinzufügen, anstatt als extra If-Bedingung in die handle Funktion.
+            constructor.getExpressions().add(stateTransitionExpression);
+            trimEvalState(stateActivities).forEach(e -> constructor.getExpressions().add(new ExpressionStringImpl(e)));
+            // TODO add support for multiple outgoing transitions originating from the initial state
+            // Those transitions need either a different 'Eingabewort' or different condition
+        } else {
+            String ifStmt = String.format("\t\t%s {\n", ifStmtTrimmed);
+            smartContract.append(ifStmt);
+            handleFunctionIf.getConditions().add(new Pair<>(ifStmtTrimmed, new LinkedList<>()));
+
+
+            handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond()
+                .add(stateTransitionExpression);
+            smartContract.append(String.format("\t\t\t%s;\n", stateTransition));
+            smartContract.append(stateActivities);
+            trimEvalStateValueAndAddToIfFunction(stateActivities);
+
+            transitioned = true;
+        }
+
     }
 
     /**
      * Adds entries to {@link MetaInformation#getIncomingTransitionMap()}.
+     *
      * @param stateName Name of a state
-     * @param t the incoming transitions to the state
+     * @param t         the incoming transitions to the state
      */
     private void addTransitionMapEntry(String stateName, TransitionContext t) {
         if (!metaInformation.getIncomingTransitionMap().containsKey(stateName.toUpperCase())) {
@@ -639,9 +665,18 @@ public class MainListener extends PlantUmlBaseListener {
      * @param evalState output of {@link #evalState(String, String)}
      */
     private void trimEvalStateValueAndAddToIfFunction(String evalState) {
-        Stream.of(evalState.trim().replaceAll("\\t", "").split("[;\\n]"))
-            .filter(it -> it.length() > 0)
+        trimEvalState(evalState)
             .forEach(it -> handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond().add(new ExpressionStringImpl(it)));
+    }
+
+    /**
+     * @param evalState output of {@link #evalState(String, String)}
+     * @return evalState trimmed and split by \n
+     */
+    private List<String> trimEvalState(String evalState) {
+        return Stream.of(evalState.trim().replaceAll("\\t", "").split("[;\\n]"))
+            .filter(it -> it.length() > 0)
+            .collect(Collectors.toList());
     }
 
     /**
