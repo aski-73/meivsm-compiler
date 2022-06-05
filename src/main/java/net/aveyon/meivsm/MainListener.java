@@ -85,9 +85,12 @@ public class MainListener extends PlantUmlBaseListener {
         smartContract.append("pragma solidity " + pragma + ";\n\n");
         smartContract.append(String.format("contract %s {\n", smartContractName));
         smartContract.append("\tstring public state = \"START\";\n");
+        Field stateField = new FieldImpl("state");
+        stateField.setValue("START");
 
         currentGeneratedSmartContract = new SmartContractImpl(smartContractName);
         model.getDefinitions().getContracts().add(currentGeneratedSmartContract);
+        currentGeneratedSmartContract.getFields().add(stateField);
 
         // Wenn das Diagramm eine pay*-Transaktion beinhaltet, werden eine Map und Array
         // für alle Sender erzeugt

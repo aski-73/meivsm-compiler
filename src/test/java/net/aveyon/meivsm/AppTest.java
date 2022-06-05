@@ -58,6 +58,8 @@ public class AppTest {
         // THEN
         // correct contract name
         assertEquals("testContract", model.getFirst().getDefinitions().getContracts().get(0).getName());
+        // has 3 field declarations (state, i and title)
+        assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getFields().size());
         // has 3 expression in constructor (comment, state transition and value assignment)
         assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor().getExpressions().size());
         // has the handle function
