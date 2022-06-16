@@ -12,6 +12,7 @@ import java.io.*;
 import java.util.Objects;
 
 public class AppTest {
+    IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
 
     /**
      * Rigorous Test.
@@ -60,12 +61,19 @@ public class AppTest {
         assertEquals("testContract", model.getFirst().getDefinitions().getContracts().get(0).getName());
         // has 3 field declarations (state, i and title)
         assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getFields().size());
-        // has 3 expression in constructor (comment, state transition and value assignment)
-        assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor().getExpressions().size());
-        // has the handle function
+        // has the ctor
+        assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor());
+        // has 1 expression in constructor (call to init)
+        assertEquals(1, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor().getExpressions().size());
+        // has the init function
         assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0));
+        assertEquals("init", model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getName());
+        // has 3 expression in init func (comment, state transition and value assignment)
+        assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getExpressions().size());
+        // has the handle function
+        assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(1));
         // handle function contains an if expression
-        assertTrue(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getExpressions().get(0) instanceof ExpressionIf);
+        assertTrue(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(1).getExpressions().get(0) instanceof ExpressionIf);
     }
 
     @Test
@@ -77,7 +85,6 @@ public class AppTest {
 
         // WHEN
         Pair<SmartContractModel, MetaInformation> model = new App().parse(fis);
-        IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
         System.out.println(extractor.generateSmartContractModel(model.getFirst()));
 
         // THEN
@@ -105,5 +112,29 @@ public class AppTest {
 
         // THEN
         assertEquals(2, model.getSecond().getIncomingTransitionMap().get("ExampleState".toUpperCase()).size());
+    }
+
+    /**
+     * Current global variables and what it should be translated to:
+     * - balance => this.balance
+     */
+    @Test
+    public void appGeneratesTranslatesGlobalVariablesCorrectly() throws IOException {
+        // GIVEN
+        String givenPlantUml =
+            "@startuml testContract\n" +
+                "[*] -> Test: call\n" +
+                "Test: entry/ call(balance)\n" +
+                "Test: entry/ transfer balance to msg.sender\n" +
+                "[Test] -> [*]: directRead()\n" +
+                "@enduml\n";
+
+        // WHEN
+        Pair<SmartContractModel, MetaInformation> model = new App().parse(new ByteArrayInputStream(givenPlantUml.getBytes()));
+        String extracted = extractor.generateSmartContractModel(model.getFirst());
+        System.out.println(extracted);
+
+        // THEN
+        assertTrue(extracted.contains("this.balance"));
     }
 }

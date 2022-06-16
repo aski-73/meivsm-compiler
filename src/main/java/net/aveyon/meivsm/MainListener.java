@@ -43,6 +43,11 @@ public class MainListener extends PlantUmlBaseListener {
      */
     private final Constructor constructor = new ConstructorImpl();
 
+    /**
+     * Contains the actual constructor logic.
+     */
+    private final Function constructorInit = new FunctionImpl("init");
+
     private String pragma = "<0.9.0";
     private String license = "GPL-3.0";
 
@@ -86,7 +91,8 @@ public class MainListener extends PlantUmlBaseListener {
         smartContract.append(String.format("contract %s {\n", smartContractName));
         smartContract.append("\tstring public state = \"START\";\n");
         Field stateField = new FieldImpl("state");
-        stateField.setValue("START");
+        stateField.setValue("\"START\"");
+        stateField.setType("string");
 
         currentGeneratedSmartContract = new SmartContractImpl(smartContractName);
         model.getDefinitions().getContracts().add(currentGeneratedSmartContract);
@@ -123,8 +129,13 @@ public class MainListener extends PlantUmlBaseListener {
         // Fallback Function (sinnvolle Implementierung finden)
         // smartContract.append("\tfunction() external {}\n\n");
 
+        // Init Funktion
+        constructorInit.setVisibility(Visibility.INTERNAL);
+        currentGeneratedSmartContract.getDefinitions().getFunctions().add(constructorInit);
+
         // Konstruktor
         currentGeneratedSmartContract.getDefinitions().setConstructor(constructor);
+        constructor.getExpressions().add(new ExpressionStringImpl("init()"));
 
         // Hauptmethode
         handleFunction = new FunctionImpl("handle");
@@ -171,6 +182,7 @@ public class MainListener extends PlantUmlBaseListener {
         currentGeneratedSmartContract.getDefinitions().getFunctions().add(transfer);
         FunctionParameter paramAmount = new FunctionParameterImpl("amount");
         paramAmount.setType("uint");
+        paramAmount.setDataLocation(DataLocation.MEMORY);
         FunctionParameter paramReceiver = new FunctionParameterImpl("receiver");
         paramReceiver.setType("address");
         paramReceiver.setPayable(true);
@@ -459,7 +471,7 @@ public class MainListener extends PlantUmlBaseListener {
      * übersetzt wird
      */
     public String enterTransferStatementReturnsString(TransferStatementContext ctx) {
-        return String.format("\t\t\ttransfer(%s, %s);\n", ctx.amount.getText(), ctx.receiver.getText());
+        return String.format("\t\t\ttransfer(%s, %s);\n", evalExpression(ctx.amount), ctx.receiver.getText());
     }
 
     /**
@@ -482,6 +494,10 @@ public class MainListener extends PlantUmlBaseListener {
             expression = enterMethodCallReturnsString((MethodCallContext) ctx);
         } else if (ctx instanceof JustAVariableContext) {
             expression = enterJustAVariableReturnsString((JustAVariableContext) ctx);
+            // "balance" is a shortcut for "this.balance"
+            if (expression.equals("balance")) {
+                expression = "address(this).balance";
+            }
         } else if (ctx instanceof JustAConstantContext) {
             expression = enterJustAConstantReturnsString((JustAConstantContext) ctx);
         } else if (ctx instanceof CondExprContext) {
@@ -584,7 +600,7 @@ public class MainListener extends PlantUmlBaseListener {
         for (int i = 0; i < ctx.getChildCount(); i++) {
             if (ctx.getChild(i) instanceof ExpressionContext) {
                 sb.append(evalExpression((ExpressionContext) ctx.getChild(i)));
-                // Komma als Seperierung hinzufügen
+                // Komma als Separierung hinzufügen
                 sb.append(", ");
             }
         }
@@ -613,8 +629,8 @@ public class MainListener extends PlantUmlBaseListener {
         if (state.equals("START")) {
             // Zustand auf der linken Seite ist der Startzustand => Alle Aktivitäten des Zielzustands
             // in den Konstruktor hinzufügen, anstatt als extra If-Bedingung in die handle Funktion.
-            constructor.getExpressions().add(stateTransitionExpression);
-            trimEvalState(stateActivities).forEach(e -> constructor.getExpressions().add(new ExpressionStringImpl(e)));
+            constructorInit.getExpressions().add(stateTransitionExpression);
+            trimEvalState(stateActivities).forEach(e -> constructorInit.getExpressions().add(new ExpressionStringImpl(e)));
             // TODO add support for multiple outgoing transitions originating from the initial state
             // Those transitions need either a different 'Eingabewort' or different condition
         } else {
