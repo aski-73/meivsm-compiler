@@ -1,4 +1,4 @@
-// Generated from PlantUml.g4 by ANTLR 4.10.1
+// Generated from /home/andi/aveyon/meivsm-compiler/src/main/resources/grammar/PlantUml.g4 by ANTLR 4.10.1
 package net.aveyon.meivsm.parser;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 

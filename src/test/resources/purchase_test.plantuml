@@ -7,13 +7,13 @@ hide empty description
 Created: entry/ seller = payable(msg.sender)
 Created: entry/ value = msg.value / 2
 
-Created ---> Aborting: abort() \n[sent from seller]
+Created ---> Aborting: abort()\n[sent from seller]
 
 Aborting: entry/ emit Aborted()
 Aborting: entry/ transfer balance to seller
 Aborting --> Inactive
 
-Created --> Locked: confirmPurchase() \n[msg.value == 2 * value]
+Created --> Locked: confirmPurchase() \n [msg.value == 2 * value]
 
 Locked: entry/ emit PurchaseConfirmed()
 Locked: entry/ buyer = payable(msg.sender)
@@ -27,6 +27,4 @@ Refunding: entry/ emit SellerRefunded()
 Refunding: entry/ transfer 3 * value to seller
 Refunding --> Inactive
 Inactive --> [*]
-
-
 @enduml

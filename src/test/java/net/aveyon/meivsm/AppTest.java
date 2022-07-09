@@ -51,7 +51,6 @@ public class AppTest {
                 "@enduml\n";
 
         // WHEN
-        App.inspect(new ByteArrayInputStream(givenPlantUml.getBytes()));
         Pair<SmartContractModel, MetaInformation> model = new App().parse(new ByteArrayInputStream(givenPlantUml.getBytes()));
         IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
         System.out.println(extractor.generateSmartContractModel(model.getFirst()));
@@ -88,13 +87,14 @@ public class AppTest {
         System.out.println(extractor.generateSmartContractModel(model.getFirst()));
 
         // THEN
+        // handle function is the second function of the contract. First one is the init() function
         ExpressionIf handleFunctionIf = (ExpressionIf) model.getFirst().getDefinitions()
             .getContracts().get(0)
             .getDefinitions()
-            .getFunctions().get(0)
+            .getFunctions().get(1)
             .getExpressions().get(0);
 
-        assertEquals(handleFunctionIf.getConditions().size(), 7);
+        assertEquals(7, handleFunctionIf.getConditions().size());
     }
 
     @Test
@@ -135,6 +135,21 @@ public class AppTest {
         System.out.println(extracted);
 
         // THEN
-        assertTrue(extracted.contains("this.balance"));
+        assertTrue(extracted.contains("address(this).balance"));
+    }
+
+    @Test
+    public void appGeneratesSimpleRentalContract() throws IOException {
+        // GIVEN
+        String plantUmlFile = Objects.requireNonNull(this.getClass().getClassLoader().getResource("sm_rental_ma_test.plantuml"))
+            .getPath();
+        assertNotNull(plantUmlFile);
+        FileInputStream fis = new FileInputStream(plantUmlFile);
+
+        // WHEN
+        String contract = new App().compile(fis);
+
+        // THEN
+        System.out.println(contract);
     }
 }

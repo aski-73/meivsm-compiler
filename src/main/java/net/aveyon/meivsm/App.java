@@ -34,18 +34,6 @@ public final class App implements Api {
         }
     }
 
-    public static void inspect(InputStream in) throws IOException {
-        CharStream input = CharStreams.fromStream(in);
-        // Lexer erstellen
-        PlantUmlLexer lexer = new PlantUmlLexer(input);
-        // Vom Lexer gelesene Tokens
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        // Parser erzeugen
-        PlantUmlParser parser = new PlantUmlParser(tokens);
-
-        org.antlr.v4.gui.Trees.inspect(parser.plantUml(), parser);
-    }
-
     public String compile(InputStream plantUmlFile) throws IOException {
         IntermediateSolidityExtractor extractor = new IntermediateSolidityExtractor();
         return extractor.generateSmartContractModel(parse(plantUmlFile).getFirst());
@@ -87,8 +75,6 @@ public final class App implements Api {
             preListener.isPayStar());
         walker.walk(listener, parseTree);
 
-        System.out.println(listener.getSmartContract().toString());
-
-        return new Pair(listener.getModel(), listener.getMetaInformation());
+        return new Pair<>(listener.getModel(), listener.getMetaInformation());
     }
 }

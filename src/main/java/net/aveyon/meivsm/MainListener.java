@@ -177,23 +177,23 @@ public class MainListener extends PlantUmlBaseListener {
         smartContract.append("\tfunction isEqual(string memory a, string memory b) internal pure" + " returns (bool) {\n"
             + "\t\treturn (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));\n\t}\n\n");
 
-        Function transfer = new FunctionImpl("transfer");
-        transfer.setVisibility(Visibility.INTERNAL);
-        currentGeneratedSmartContract.getDefinitions().getFunctions().add(transfer);
-        FunctionParameter paramAmount = new FunctionParameterImpl("amount");
-        paramAmount.setType("uint");
-        paramAmount.setDataLocation(DataLocation.MEMORY);
-        FunctionParameter paramReceiver = new FunctionParameterImpl("receiver");
-        paramReceiver.setType("address");
-        paramReceiver.setPayable(true);
-        transfer.getParameters().add(paramAmount);
-        transfer.getParameters().add(paramReceiver);
-        transfer.getExpressions().add(new ExpressionStringImpl("address self = address(this)"));
-        transfer.getExpressions().add(new ExpressionStringImpl("uint256 balance = self.balance"));
-        ExpressionIf transferIf = new ExpressionIfImpl();
-        transferIf.getConditions().add(new Pair<>("if (balance >= amount)", new LinkedList<>()));
-        transferIf.getConditions().get(0).getSecond().add(new ExpressionStringImpl("receiver.transfer(amount)"));
-        transfer.getExpressions().add(transferIf);
+//        Function transfer = new FunctionImpl("transfer");
+//        transfer.setVisibility(Visibility.INTERNAL);
+//        currentGeneratedSmartContract.getDefinitions().getFunctions().add(transfer);
+//        FunctionParameter paramAmount = new FunctionParameterImpl("amount");
+//        paramAmount.setType("uint");
+//        paramAmount.setDataLocation(DataLocation.MEMORY);
+//        FunctionParameter paramReceiver = new FunctionParameterImpl("receiver");
+//        paramReceiver.setType("address");
+//        paramReceiver.setPayable(true);
+//        transfer.getParameters().add(paramAmount);
+//        transfer.getParameters().add(paramReceiver);
+//        transfer.getExpressions().add(new ExpressionStringImpl("address self = address(this)"));
+//        transfer.getExpressions().add(new ExpressionStringImpl("uint256 balance = self.balance"));
+//        ExpressionIf transferIf = new ExpressionIfImpl();
+//        transferIf.getConditions().add(new Pair<>("if (balance >= amount)", new LinkedList<>()));
+//        transferIf.getConditions().get(0).getSecond().add(new ExpressionStringImpl("receiver.transfer(amount)"));
+//        transfer.getExpressions().add(transferIf);
 
         smartContract.append("\tfunction transfer(uint amount, address payable receiver) internal {\n"
             + "\t\taddress self = address(this);\n"
@@ -471,7 +471,9 @@ public class MainListener extends PlantUmlBaseListener {
      * übersetzt wird
      */
     public String enterTransferStatementReturnsString(TransferStatementContext ctx) {
-        return String.format("\t\t\ttransfer(%s, %s);\n", evalExpression(ctx.amount), ctx.receiver.getText());
+//        return String.format("\t\t\ttransfer(%s, %s);\n", evalExpression(ctx.amount), ctx.receiver.getText());
+        String receiver = ctx.receiver.getText().equals("msg.sender") ? "payable(msg.sender)": ctx.receiver.getText();
+        return String.format("\t\t\t%s.transfer(%s);\n", receiver, evalExpression(ctx.amount));
     }
 
     /**

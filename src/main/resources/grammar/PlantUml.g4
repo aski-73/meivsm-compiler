@@ -72,6 +72,7 @@ RETURN: 'return';
 EMIT: 'emit';
 TRANSFER: 'transfer';
 TO: 'to';
+SENT_FROM: 'sent from';
 
 SKINPARAM: 'skinparam';
 
@@ -80,8 +81,7 @@ NUMBER: [0-9]+;
 HEX_COLOR: '#' [0-9A-F]+;
 // Bezeichner von Klassen, Attributen
 IDENTIFIER: [a-zA-Z]+;
-OBJECT_ACCESS: [a-zA-Z\\.]+;
-
+OBJECT_ACCESS: [a-zA-Z\u{002E}]+;
 STRING_VALUE: '"' ('\\' [\\"] | .)*? '"';
 
 // ?. Sorgt dafür, dass der Lexer Leerzeichen etc. als Tokens ignoriert
@@ -90,8 +90,9 @@ STRING_VALUE: '"' ('\\' [\\"] | .)*? '"';
 // Regel zugewiesen
 VALUE: [0-9a-zA-Z#+-/*]+;
 
-// \\n skips the '\n' literal in the plant uml file
-WS: [ \r\t\n\\n]+ -> skip;
+BS: '\\';
+NL: BS 'n' -> skip;
+WS: [ \r\t\n]+ -> skip;
 
 /* Parser Rules */
 
@@ -173,7 +174,7 @@ expression:
 	| lv = expression op = mathOperator rv = expression	    # MathOperation
 	| lv = expression op = compOperator rv = expression	    # CompOperation
 	| l = variable ASSIGN_OP r = expression				    # Assignment
-	| 'sent from' variable								    # SentFromExpr
+	| SENT_FROM variable								    # SentFromExpr
 	| constant											    # JustAConstant
 	| variable											    # JustAVariable
 	| method											    # MethodCall;

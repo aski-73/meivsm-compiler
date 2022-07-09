@@ -1,0 +1,15 @@
+@startuml RentalContract
+skinparam Monochrome true
+skinparam Shadowing false
+
+[*] --> created
+created: entry/ owner: address = 0x7F181DeF2E46196a239aC423a2b77e2E6A4d54a6
+created: entry/ objectId: uint = 2937907
+created --> renting: pay 5 ether
+renting: entry/ tenant: address = 0x1023aE3D76272dA1916E680f55Bc53D56340B86c
+renting: entry/ endDate: uint = now + 30 days
+renting: exit/ transfer 5 ether to owner
+renting --> created: check [now >= endDate]
+created -> [*]: exit [sent from owner]
+@enduml
+
