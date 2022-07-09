@@ -499,6 +499,8 @@ public class MainListener extends PlantUmlBaseListener {
             // "balance" is a shortcut for "this.balance"
             if (expression.equals("balance")) {
                 expression = "address(this).balance";
+            } else if (expression.equals("now")) {
+                expression = "block.timestamp";
             }
         } else if (ctx instanceof JustAConstantContext) {
             expression = enterJustAConstantReturnsString((JustAConstantContext) ctx);

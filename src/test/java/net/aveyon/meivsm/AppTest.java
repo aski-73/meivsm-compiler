@@ -139,7 +139,7 @@ public class AppTest {
     }
 
     @Test
-    public void appGeneratesSimpleRentalContract() throws IOException {
+    public void appGeneratesSimpleRentalContractAndReplacesNow() throws IOException {
         // GIVEN
         String plantUmlFile = Objects.requireNonNull(this.getClass().getClassLoader().getResource("sm_rental_ma_test.plantuml"))
             .getPath();
@@ -150,6 +150,7 @@ public class AppTest {
         String contract = new App().compile(fis);
 
         // THEN
+        assertTrue(contract.contains("block.timestamp"));
         System.out.println(contract);
     }
 }
