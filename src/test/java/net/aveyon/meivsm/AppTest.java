@@ -153,4 +153,19 @@ public class AppTest {
         assertTrue(contract.contains("block.timestamp"));
         System.out.println(contract);
     }
+
+    @Test
+    public void appGeneratesSimpleRentalContractWithErr() throws IOException {
+        // GIVEN
+        String plantUmlFile = Objects.requireNonNull(this.getClass().getClassLoader().getResource("sm_rental_ma_with_err_test.plantuml"))
+            .getPath();
+        assertNotNull(plantUmlFile);
+        FileInputStream fis = new FileInputStream(plantUmlFile);
+
+        // WHEN
+        String contract = new App().compile(fis);
+
+        // THEN
+        System.out.println(contract);
+    }
 }

@@ -132,6 +132,18 @@ public interface PlantUmlListener extends ParseTreeListener {
 	 */
 	void exitTransCond(PlantUmlParser.TransCondContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code TransPayClassic}
+	 * labeled alternative in {@link PlantUmlParser#transition}.
+	 * @param ctx the parse tree
+	 */
+	void enterTransPayClassic(PlantUmlParser.TransPayClassicContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code TransPayClassic}
+	 * labeled alternative in {@link PlantUmlParser#transition}.
+	 * @param ctx the parse tree
+	 */
+	void exitTransPayClassic(PlantUmlParser.TransPayClassicContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code TransPay}
 	 * labeled alternative in {@link PlantUmlParser#transition}.
 	 * @param ctx the parse tree
@@ -341,6 +353,18 @@ public interface PlantUmlListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitMathOperation(PlantUmlParser.MathOperationContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code ValExpr}
+	 * labeled alternative in {@link PlantUmlParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterValExpr(PlantUmlParser.ValExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ValExpr}
+	 * labeled alternative in {@link PlantUmlParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitValExpr(PlantUmlParser.ValExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code CompOperation}
 	 * labeled alternative in {@link PlantUmlParser#expression}.

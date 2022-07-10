@@ -1,0 +1,14 @@
+@startuml RentalContract
+skinparam Monochrome true
+skinparam Shadowing false
+hide empty description
+
+[*] --> created
+created --> failure: pay [msg.value != 5 ether]
+failure: entry/ revert("not enough ether")
+failure --> created
+created --> renting: pay 5 ether
+renting --> created: check [now >= endDate]
+created -> [*]: exit [sent from owner]
+@enduml
+

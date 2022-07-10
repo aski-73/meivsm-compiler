@@ -84,6 +84,13 @@ public interface PlantUmlVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTransCond(PlantUmlParser.TransCondContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code TransPayClassic}
+	 * labeled alternative in {@link PlantUmlParser#transition}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTransPayClassic(PlantUmlParser.TransPayClassicContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code TransPay}
 	 * labeled alternative in {@link PlantUmlParser#transition}.
 	 * @param ctx the parse tree
@@ -207,6 +214,13 @@ public interface PlantUmlVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMathOperation(PlantUmlParser.MathOperationContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ValExpr}
+	 * labeled alternative in {@link PlantUmlParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitValExpr(PlantUmlParser.ValExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code CompOperation}
 	 * labeled alternative in {@link PlantUmlParser#expression}.

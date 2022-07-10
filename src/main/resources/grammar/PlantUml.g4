@@ -13,6 +13,7 @@ COMMA: ',';
 ASSIGN_OP: '=';
 
 OP_EQUAL: '==';
+OP_NOT_EQUAL: '!=';
 // Less Then
 OP_LT: '<';
 // Lesser Or Equal
@@ -73,6 +74,7 @@ EMIT: 'emit';
 TRANSFER: 'transfer';
 TO: 'to';
 SENT_FROM: 'sent from';
+PAY: 'pay';
 
 SKINPARAM: 'skinparam';
 
@@ -123,8 +125,9 @@ statement:
 transition:
 	l = state arrow r = state COLON i = expression      							# Trans
 	| l = state arrow r = state COLON i = expression c = condition					# TransCond
-	| l = state arrow r = state COLON i = 'pay' v = NUMBER u = unit					# TransPay
-	| l = state arrow r = state COLON i = 'pay' v = NUMBER u = unit c = condition	# TransPayCond
+	| l = state arrow r = state COLON i = PAY c = condition					        # TransPayClassic
+	| l = state arrow r = state COLON i = PAY v = NUMBER u = unit					# TransPay
+	| l = state arrow r = state COLON i = PAY v = NUMBER u = unit c = condition	    # TransPayCond
 	| l = state arrow r = state COLON i = 'pay*'									# TransPayStar
 	| l = state arrow r = state COLON i = 'pay*' c = condition						# TransPayStarCond
 	| l = state arrow r = state														# EmptyTrans;
@@ -132,7 +135,7 @@ transition:
 // Bedingungen an Zustandsübergängen
 condition: BRACKET_OPEN expression BRACKET_CLOSE;
 
-compOperator: OP_EQUAL | OP_LT | OP_LTE | OP_GT | OP_GTE;
+compOperator: OP_EQUAL | OP_NOT_EQUAL | OP_LT | OP_LTE | OP_GT | OP_GTE;
 
 mathOperator: PLUS | MINUS | DIVIDE | MULT;
 
@@ -177,7 +180,9 @@ expression:
 	| SENT_FROM variable								    # SentFromExpr
 	| constant											    # JustAConstant
 	| variable											    # JustAVariable
-	| method											    # MethodCall;
+	| method											    # MethodCall
+	| val                                                   # ValExpr
+	;
 
 // Parameter für Methoden. Identisch mit zweiter Alternative der attr Regel. Aufgrund der
 // Formatierung nachher im Compiler, aber nicht ander lösbar

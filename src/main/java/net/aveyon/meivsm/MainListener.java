@@ -38,7 +38,7 @@ public class MainListener extends PlantUmlBaseListener {
     private ExpressionIf handleFunctionIf;
 
     /**
-     * Every contract has a constructor, which contains the entry activities of the target states whose tranisiton
+     * Every contract has a constructor, which contains the entry activities of the target states whose transition
      * originated from the initial state.
      */
     private final Constructor constructor = new ConstructorImpl();
@@ -269,6 +269,28 @@ public class MainListener extends PlantUmlBaseListener {
         smartContract.append("\t\t}\n");
     }
 
+
+    /**
+     * Behaves like {@link #enterTransCond(TransCondContext)} except its input word is always 'pay'.
+     */
+    @Override
+    public void enterTransPayClassic(TransPayClassicContext ctx) {
+        String inputWord = "pay";
+
+        String state = "START";
+        if (!ctx.l.getText().equals("[*]")) {
+            state = ctx.l.getText().toUpperCase();
+        }
+
+        // Vergleichsausdruck
+        String expression = evalExpression(ctx.c.expression());
+
+        String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\") && isEqual(input, \"%s\") && %s)",
+            transitioned ? "else if" : "if", state, inputWord , expression);
+        addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
+
+        addTransitionMapEntry(ctx.r.getText(), ctx);
+    }
 
     /**
      * Verarbeiten einer Transaktion mit dem Eingabewort 'pay' und einem Geldbetrag
@@ -506,6 +528,8 @@ public class MainListener extends PlantUmlBaseListener {
             expression = enterJustAConstantReturnsString((JustAConstantContext) ctx);
         } else if (ctx instanceof CondExprContext) {
             expression = enterCondExprReturnsString((CondExprContext) ctx);
+        } else if (ctx instanceof ValExprContext) {
+            expression = enterValExprReturnsString((ValExprContext) ctx);
         }
         return expression;
     }
@@ -614,6 +638,10 @@ public class MainListener extends PlantUmlBaseListener {
         sb.append(");\n");
 
         return sb.toString();
+    }
+
+    public String enterValExprReturnsString(ValExprContext ctx) {
+        return ctx.getText();
     }
 
     private void addIfStatement(String ifStmtTrimmed, String state, String newState) {

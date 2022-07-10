@@ -3,7 +3,7 @@ skinparam Monochrome true
 skinparam Shadowing false
 
 [*] --> created
-created: entry/ owner: address = payable(msg.sender)
+created: entry/ owner: address = payable(0x7F181DeF2E46196a239aC423a2b77e2E6A4d54a6)
 created: entry/ objectId: uint = 2937907
 created --> renting: pay 5 ether
 renting: entry/ tenant: address = payable(msg.sender)

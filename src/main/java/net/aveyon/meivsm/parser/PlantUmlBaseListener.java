@@ -148,6 +148,18 @@ public class PlantUmlBaseListener implements PlantUmlListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTransPayClassic(PlantUmlParser.TransPayClassicContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTransPayClassic(PlantUmlParser.TransPayClassicContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterTransPay(PlantUmlParser.TransPayContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -371,6 +383,18 @@ public class PlantUmlBaseListener implements PlantUmlListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitMathOperation(PlantUmlParser.MathOperationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterValExpr(PlantUmlParser.ValExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitValExpr(PlantUmlParser.ValExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
