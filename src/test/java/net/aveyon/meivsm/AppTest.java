@@ -1,6 +1,6 @@
 package net.aveyon.meivsm;
 
-import net.aveyon.intermediate_solidity.ExpressionIf;
+import net.aveyon.intermediate_solidity.StatementIf;
 import net.aveyon.intermediate_solidity.SmartContractModel;
 import net.aveyon.intermediate_solidity.util.Pair;
 import net.aveyon.intermediate_solidity_extractor.IntermediateSolidityExtractor;
@@ -63,16 +63,16 @@ public class AppTest {
         // has the ctor
         assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor());
         // has 1 expression in constructor (call to init)
-        assertEquals(1, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor().getExpressions().size());
+        assertEquals(1, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getConstructor().getStatements().size());
         // has the init function
         assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0));
         assertEquals("init", model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getName());
         // has 3 expression in init func (comment, state transition and value assignment)
-        assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getExpressions().size());
+        assertEquals(3, model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(0).getStatements().size());
         // has the handle function
         assertNotNull(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(1));
         // handle function contains an if expression
-        assertTrue(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(1).getExpressions().get(0) instanceof ExpressionIf);
+        assertTrue(model.getFirst().getDefinitions().getContracts().get(0).getDefinitions().getFunctions().get(1).getStatements().get(0) instanceof StatementIf);
     }
 
     @Test
@@ -88,11 +88,11 @@ public class AppTest {
 
         // THEN
         // handle function is the second function of the contract. First one is the init() function
-        ExpressionIf handleFunctionIf = (ExpressionIf) model.getFirst().getDefinitions()
+        StatementIf handleFunctionIf = (StatementIf) model.getFirst().getDefinitions()
             .getContracts().get(0)
             .getDefinitions()
             .getFunctions().get(1)
-            .getExpressions().get(0);
+            .getStatements().get(0);
 
         assertEquals(7, handleFunctionIf.getConditions().size());
     }

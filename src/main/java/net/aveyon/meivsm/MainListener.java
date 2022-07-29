@@ -1,6 +1,5 @@
 package net.aveyon.meivsm;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +34,7 @@ public class MainListener extends PlantUmlBaseListener {
     /**
      * Main If Statement of the handle function. Controls the flow of the smart contract.
      */
-    private ExpressionIf handleFunctionIf;
+    private StatementIf handleFunctionIf;
 
     /**
      * Every contract has a constructor, which contains the entry activities of the target states whose transition
@@ -90,9 +89,8 @@ public class MainListener extends PlantUmlBaseListener {
         smartContract.append("pragma solidity " + pragma + ";\n\n");
         smartContract.append(String.format("contract %s {\n", smartContractName));
         smartContract.append("\tstring public state = \"START\";\n");
-        Field stateField = new FieldImpl("state");
+        Field stateField = new FieldImpl("state", new TypeImpl("string"));
         stateField.setValue("\"START\"");
-        stateField.setType("string");
 
         currentGeneratedSmartContract = new SmartContractImpl(smartContractName);
         model.getDefinitions().getContracts().add(currentGeneratedSmartContract);
@@ -110,8 +108,7 @@ public class MainListener extends PlantUmlBaseListener {
         // Attribute / Fields Deklarationen
         for (ParamContext attrCtx : preFetchedAttributes) {
             // Field/Attribut Deklaration
-            Field f = new FieldImpl(attrCtx.id.getText());
-            f.setType(attrCtx.t.getText());
+            Field f = new FieldImpl(attrCtx.id.getText(), new TypeImpl(attrCtx.t.getText()));
             f.setVisibility(Visibility.PUBLIC);
 
             if (attrCtx.t.getText().equals("address")) {
@@ -135,18 +132,17 @@ public class MainListener extends PlantUmlBaseListener {
 
         // Konstruktor
         currentGeneratedSmartContract.getDefinitions().setConstructor(constructor);
-        constructor.getExpressions().add(new ExpressionStringImpl("init()"));
+        constructor.getStatements().add(new StatementExpressionImpl(new ExpressionImpl("init()")));
 
         // Hauptmethode
         handleFunction = new FunctionImpl("handle");
         handleFunction.setPayable(true);
         handleFunction.setVisibility(Visibility.PUBLIC);
-        FunctionParameter param = new FunctionParameterImpl("input");
-        param.setType("string");
+        FunctionParameter param = new FunctionParameterImpl("input", new TypeImpl("string"));
         param.setDataLocation(DataLocation.MEMORY);
         handleFunction.getParameters().add(param);
-        handleFunctionIf = new ExpressionIfImpl();
-        handleFunction.getExpressions().add(handleFunctionIf);
+        handleFunctionIf = new StatementIfImpl();
+        handleFunction.getStatements().add(handleFunctionIf);
         currentGeneratedSmartContract.getDefinitions().getFunctions().add(handleFunction);
 
         smartContract.append("\tfunction handle(string memory input) public payable {\n");
@@ -161,17 +157,18 @@ public class MainListener extends PlantUmlBaseListener {
         Function isEqual = new FunctionImpl("isEqual");
         isEqual.setVisibility(Visibility.INTERNAL);
         isEqual.setPure(true);
-        isEqual.getReturns().add("bool");
+        isEqual.getReturns().add(new FunctionParameterImpl("name", new TypeImpl("bool")));
         currentGeneratedSmartContract.getDefinitions().getFunctions().add(isEqual);
-        FunctionParameter paramA = new FunctionParameterImpl("a");
-        paramA.setType("string");
+        FunctionParameter paramA = new FunctionParameterImpl("a", new TypeImpl("string"));
         paramA.setDataLocation(DataLocation.MEMORY);
         FunctionParameter paramB = new FunctionParameterImpl((paramA));
         paramB.setName("b");
         isEqual.getParameters().add(paramA);
         isEqual.getParameters().add(paramB);
-        isEqual.getExpressions().add(
-            new ExpressionStringImpl("return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))))")
+        isEqual.getStatements().add(
+            new StatementExpressionImpl(
+                new ExpressionImpl("return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))))")
+            )
         );
 
         smartContract.append("\tfunction isEqual(string memory a, string memory b) internal pure" + " returns (bool) {\n"
@@ -286,7 +283,7 @@ public class MainListener extends PlantUmlBaseListener {
         String expression = evalExpression(ctx.c.expression());
 
         String ifStmtTrimmed = String.format("%s (isEqual(state, \"%s\") && isEqual(input, \"%s\") && %s)",
-            transitioned ? "else if" : "if", state, inputWord , expression);
+            transitioned ? "else if" : "if", state, inputWord, expression);
         addIfStatement(ifStmtTrimmed, state, ctx.r.getText().toUpperCase());
 
         addTransitionMapEntry(ctx.r.getText(), ctx);
@@ -494,7 +491,7 @@ public class MainListener extends PlantUmlBaseListener {
      */
     public String enterTransferStatementReturnsString(TransferStatementContext ctx) {
 //        return String.format("\t\t\ttransfer(%s, %s);\n", evalExpression(ctx.amount), ctx.receiver.getText());
-        String receiver = ctx.receiver.getText().equals("msg.sender") ? "payable(msg.sender)": ctx.receiver.getText();
+        String receiver = ctx.receiver.getText().equals("msg.sender") ? "payable(msg.sender)" : ctx.receiver.getText();
         return String.format("\t\t\t%s.transfer(%s);\n", receiver, evalExpression(ctx.amount));
     }
 
@@ -653,7 +650,7 @@ public class MainListener extends PlantUmlBaseListener {
         }
 
         String stateTransition = String.format("state = \"%s\"", newState);
-        Expression stateTransitionExpression = new ExpressionStringImpl(stateTransition);
+        Statement stateTransitionStatement = new StatementExpressionImpl(new ExpressionImpl(stateTransition));
 
         // Falls Aktivitäten in dem neuen Zustand existieren, diese anhängen
         String stateActivities = evalState(newState, state);
@@ -661,18 +658,20 @@ public class MainListener extends PlantUmlBaseListener {
         if (state.equals("START")) {
             // Zustand auf der linken Seite ist der Startzustand => Alle Aktivitäten des Zielzustands
             // in den Konstruktor hinzufügen, anstatt als extra If-Bedingung in die handle Funktion.
-            constructorInit.getExpressions().add(stateTransitionExpression);
-            trimEvalState(stateActivities).forEach(e -> constructorInit.getExpressions().add(new ExpressionStringImpl(e)));
+            constructorInit.getStatements().add(stateTransitionStatement);
+            trimEvalState(stateActivities).forEach(e -> constructorInit.getStatements().add(
+                new StatementExpressionImpl(new ExpressionImpl(e)))
+            );
             // TODO add support for multiple outgoing transitions originating from the initial state
             // Those transitions need either a different 'Eingabewort' or different condition
         } else {
             String ifStmt = String.format("\t\t%s {\n", ifStmtTrimmed);
             smartContract.append(ifStmt);
-            handleFunctionIf.getConditions().add(new Pair<>(ifStmtTrimmed, new LinkedList<>()));
+            handleFunctionIf.getConditions().add(new Pair<>(new ExpressionImpl(ifStmtTrimmed), new LinkedList<>()));
 
 
             handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond()
-                .add(stateTransitionExpression);
+                .add(stateTransitionStatement);
             smartContract.append(String.format("\t\t\t%s;\n", stateTransition));
             smartContract.append(stateActivities);
             trimEvalStateValueAndAddToIfFunction(stateActivities);
@@ -717,7 +716,9 @@ public class MainListener extends PlantUmlBaseListener {
      */
     private void trimEvalStateValueAndAddToIfFunction(String evalState) {
         trimEvalState(evalState)
-            .forEach(it -> handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond().add(new ExpressionStringImpl(it)));
+            .forEach(it -> handleFunctionIf.getConditions().get(handleFunctionIf.getConditions().size() - 1).getSecond()
+                .add(new StatementExpressionImpl(new ExpressionImpl(it)))
+            );
     }
 
     /**
